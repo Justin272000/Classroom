@@ -1,5 +1,14 @@
 import { isCharacter } from "./characters.js";
-import { pickQuestion } from "./games/wwe.js";
+import { pickStatement } from "./games/cancelculture.js";
+import { pickQuestion as pickGuessItQuestion } from "./games/guessit.js";
+import {
+  allConnectedSubmitted as slfAllSubmitted,
+  nextSlfRound,
+  revealRound as revealSlfRound,
+  startStadtLandFluss,
+  submitWord as slfSubmitWordInternal,
+  type InternalSlfGame,
+} from "./games/stadtlandfluss.js";
 import {
   askQuestion,
   confirmGuess,
@@ -12,7 +21,16 @@ import {
   submitVote as submitWhoamiVoteInternal,
   type InternalWhoamiGame,
 } from "./games/whoami.js";
-import type { Player, RoomState, WhoamiGameState, WweGameState } from "./types.js";
+import { pickQuestion as pickWweQuestion } from "./games/wwe.js";
+import type {
+  CancelCultureGameState,
+  GuessItGameState,
+  Player,
+  RoomState,
+  StadtLandFlussGameState,
+  WhoamiGameState,
+  WweGameState,
+} from "./types.js";
 
 interface InternalWweGame {
   id: "wwe";
@@ -21,12 +39,35 @@ interface InternalWweGame {
   votes: Map<string, string>; // voterId -> targetPlayerId
 }
 
+interface InternalGuessItGame {
+  id: "guessit";
+  question: string;
+  answer: number;
+  unit: string;
+  askedQuestions: Set<string>;
+  guesses: Map<string, number>;
+}
+
+interface InternalCancelCultureGame {
+  id: "cancelculture";
+  statement: string;
+  askedStatements: Set<string>;
+  votes: Map<string, boolean>;
+}
+
+type InternalGame =
+  | InternalWweGame
+  | InternalWhoamiGame
+  | InternalGuessItGame
+  | InternalCancelCultureGame
+  | InternalSlfGame;
+
 interface Room {
   code: string;
   hostId: string;
   players: Map<string, Player>;
   phase: "lobby" | "playing" | "results";
-  game: InternalWweGame | InternalWhoamiGame | null;
+  game: InternalGame | null;
 }
 
 const rooms = new Map<string, Room>();
@@ -151,7 +192,7 @@ export function disconnectPlayer(playerId: string): Room | undefined {
 
 export function startWweGame(room: Room): void {
   const askedQuestions = room.game?.id === "wwe" ? room.game.askedQuestions : new Set<string>();
-  const question = pickQuestion(askedQuestions);
+  const question = pickWweQuestion(askedQuestions);
   askedQuestions.add(question);
   room.game = { id: "wwe", question, askedQuestions, votes: new Map() };
   room.phase = "playing";
@@ -211,13 +252,86 @@ export function whoamiConfirmGuess(room: Room, playerId: string, correct: boolea
   return confirmGuess(room.game, playerId, correct, room.players);
 }
 
+export function startGuessItGame(room: Room): void {
+  const askedQuestions = room.game?.id === "guessit" ? room.game.askedQuestions : new Set<string>();
+  const q = pickGuessItQuestion(askedQuestions);
+  askedQuestions.add(q.question);
+  room.game = { id: "guessit", question: q.question, answer: q.answer, unit: q.unit, askedQuestions, guesses: new Map() };
+  room.phase = "playing";
+}
+
+export function submitGuessItGuess(room: Room, playerId: string, guess: number): boolean {
+  if (room.phase !== "playing" || room.game?.id !== "guessit") return false;
+  if (!room.players.get(playerId)?.connected) return false;
+  if (!Number.isFinite(guess)) return false;
+
+  room.game.guesses.set(playerId, guess);
+
+  const connectedIds = [...room.players.values()].filter((p) => p.connected).map((p) => p.id);
+  const allGuessed = connectedIds.every((id) => (room.game as InternalGuessItGame).guesses.has(id));
+  if (allGuessed) room.phase = "results";
+  return true;
+}
+
+export function startCancelCultureGame(room: Room): void {
+  const askedStatements = room.game?.id === "cancelculture" ? room.game.askedStatements : new Set<string>();
+  const statement = pickStatement(askedStatements);
+  askedStatements.add(statement);
+  room.game = { id: "cancelculture", statement, askedStatements, votes: new Map() };
+  room.phase = "playing";
+}
+
+export function submitCancelCultureVote(room: Room, playerId: string, answer: boolean): boolean {
+  if (room.phase !== "playing" || room.game?.id !== "cancelculture") return false;
+  if (!room.players.get(playerId)?.connected) return false;
+
+  room.game.votes.set(playerId, answer);
+
+  const connectedIds = [...room.players.values()].filter((p) => p.connected).map((p) => p.id);
+  const allVoted = connectedIds.every((id) => (room.game as InternalCancelCultureGame).votes.has(id));
+  if (allVoted) room.phase = "results";
+  return true;
+}
+
+export function startSlfGame(room: Room): boolean {
+  const connectedIds = [...room.players.values()].filter((p) => p.connected).map((p) => p.id);
+  const game = startStadtLandFluss(connectedIds);
+  if (!game) return false;
+  room.game = game;
+  room.phase = "playing";
+  return true;
+}
+
+export function slfSubmitWord(room: Room, playerId: string, word: string): boolean {
+  if (room.game?.id !== "stadtlandfluss") return false;
+  const ok = slfSubmitWordInternal(room.game, playerId, word);
+  if (ok && slfAllSubmitted(room.game, room.players)) {
+    revealSlfRound(room.game, room.players);
+  }
+  return ok;
+}
+
+/** Host-only: advances from a round's results to the next round, or to the
+ * final podium if that was the last round. */
+export function slfNext(room: Room, playerId: string): boolean {
+  if (room.game?.id !== "stadtlandfluss") return false;
+  if (room.hostId !== playerId) return false;
+  return nextSlfRound(room.game);
+}
+
 export function endGame(room: Room): void {
   room.phase = "lobby";
   room.game = null;
 }
 
 export function toPublicState(room: Room, forPlayerId: string): RoomState {
-  let game: WweGameState | WhoamiGameState | null = null;
+  let game:
+    | WweGameState
+    | WhoamiGameState
+    | GuessItGameState
+    | CancelCultureGameState
+    | StadtLandFlussGameState
+    | null = null;
 
   if (room.game?.id === "wwe") {
     const votedPlayerIds = [...room.game.votes.keys()];
@@ -260,6 +374,45 @@ export function toPublicState(room: Room, forPlayerId: string): RoomState {
       lastAnswer: g.stage === "revealed" ? g.lastAnswer : null,
       pendingGuess: g.pendingGuess,
       solved: [...g.solved],
+    };
+  } else if (room.game?.id === "guessit") {
+    const g = room.game;
+    const guessedPlayerIds = [...g.guesses.keys()];
+    let results: GuessItGameState["results"];
+    let answer: number | undefined;
+    if (room.phase === "results") {
+      results = [...room.players.values()]
+        .filter((p) => g.guesses.has(p.id))
+        .map((p) => ({ playerId: p.id, name: p.name, guess: g.guesses.get(p.id)! }))
+        .sort((a, b) => a.guess - b.guess);
+      answer = g.answer;
+    }
+    game = { id: "guessit", question: g.question, unit: g.unit, guessedPlayerIds, results, answer };
+  } else if (room.game?.id === "cancelculture") {
+    const g = room.game;
+    const votedPlayerIds = [...g.votes.keys()];
+    let results: CancelCultureGameState["results"];
+    if (room.phase === "results") {
+      let yes = 0;
+      let no = 0;
+      for (const v of g.votes.values()) (v ? yes++ : no++);
+      results = { yes, no };
+    }
+    game = { id: "cancelculture", statement: g.statement, votedPlayerIds, results };
+  } else if (room.game?.id === "stadtlandfluss") {
+    const g = room.game;
+    const scores = [...room.players.values()]
+      .map((p) => ({ playerId: p.id, name: p.name, total: g.scores.get(p.id) ?? 0 }))
+      .sort((a, b) => b.total - a.total);
+    game = {
+      id: "stadtlandfluss",
+      stage: g.stage,
+      round: g.round,
+      totalRounds: g.totalRounds,
+      category: g.category,
+      submittedPlayerIds: [...g.words.keys()],
+      lastRoundEntries: g.lastRoundEntries,
+      scores,
     };
   }
 

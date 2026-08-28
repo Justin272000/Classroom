@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { getClientId } from "./clientId";
+import CancelCultureGame from "./pages/CancelCultureGame";
+import GuessItGame from "./pages/GuessItGame";
 import Home from "./pages/Home";
 import Lobby from "./pages/Lobby";
+import StadtLandFlussGame from "./pages/StadtLandFlussGame";
 import WhoamiGame from "./pages/WhoamiGame";
 import WweGame from "./pages/WweGame";
 import { socket } from "./socket";
@@ -54,9 +57,16 @@ export default function App() {
     return <Lobby room={room} isHost={isHost} myId={clientId} />;
   }
 
-  if (room.game.id === "whoami") {
-    return <WhoamiGame room={room} myId={clientId} isHost={isHost} />;
+  switch (room.game.id) {
+    case "whoami":
+      return <WhoamiGame room={room} myId={clientId} isHost={isHost} />;
+    case "guessit":
+      return <GuessItGame room={room} myId={clientId} isHost={isHost} />;
+    case "cancelculture":
+      return <CancelCultureGame room={room} myId={clientId} isHost={isHost} />;
+    case "stadtlandfluss":
+      return <StadtLandFlussGame room={room} myId={clientId} isHost={isHost} />;
+    default:
+      return <WweGame room={room} myId={clientId} isHost={isHost} />;
   }
-
-  return <WweGame room={room} myId={clientId} isHost={isHost} />;
 }

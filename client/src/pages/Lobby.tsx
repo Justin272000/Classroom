@@ -3,7 +3,7 @@ import Avatar from "../components/Avatar";
 import CharacterCarousel from "../components/CharacterCarousel";
 import QrCode from "../components/QrCode";
 import { socket } from "../socket";
-import type { RoomState } from "../types";
+import type { GameId, RoomState } from "../types";
 
 interface Props {
   room: RoomState;
@@ -16,7 +16,7 @@ export default function Lobby({ room, isHost, myId }: Props) {
   const [startError, setStartError] = useState<string | null>(null);
   const joinUrl = `${window.location.origin}/?code=${room.code}`;
 
-  function startGame(gameId: "wwe" | "whoami") {
+  function startGame(gameId: GameId) {
     setStartError(null);
     socket.emit("game:start", { gameId }, (res) => {
       if (!res.ok) setStartError(res.error);
@@ -98,6 +98,18 @@ export default function Lobby({ room, isHost, myId }: Props) {
           <button className="game-tile" disabled={!isHost} onClick={() => startGame("whoami")}>
             <strong>Wer bin ich</strong>
             <span>Identität erraten per Ja/Nein-Fragen</span>
+          </button>
+          <button className="game-tile" disabled={!isHost} onClick={() => startGame("guessit")}>
+            <strong>Guess it!</strong>
+            <span>Schätzfragen, alle Antworten im Vergleich</span>
+          </button>
+          <button className="game-tile" disabled={!isHost} onClick={() => startGame("cancelculture")}>
+            <strong>Cancel Culture</strong>
+            <span>Ja oder Nein zu steilen Thesen, anonym</span>
+          </button>
+          <button className="game-tile" disabled={!isHost} onClick={() => startGame("stadtlandfluss")}>
+            <strong>Stadt, Land, Fluss</strong>
+            <span>10 Runden, Punkte für Übereinstimmungen</span>
           </button>
           <div className="game-tile disabled">
             <strong>Werwolf</strong>

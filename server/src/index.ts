@@ -11,8 +11,15 @@ import {
   joinRoom,
   removePlayerFromAllRooms,
   setCharacter,
+  slfNext,
+  slfSubmitWord,
+  startCancelCultureGame,
+  startGuessItGame,
+  startSlfGame,
   startWhoamiGame,
   startWweGame,
+  submitCancelCultureVote,
+  submitGuessItGuess,
   submitWweVote,
   toPublicState,
   whoamiAsk,
@@ -129,6 +136,22 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
       } else {
         ack({ ok: false, error: "Mindestens 2 Spieler nötig." });
       }
+    } else if (payload?.gameId === "guessit") {
+      startGuessItGame(room);
+      ack({ ok: true });
+      broadcastRoom(room.code);
+    } else if (payload?.gameId === "cancelculture") {
+      startCancelCultureGame(room);
+      ack({ ok: true });
+      broadcastRoom(room.code);
+    } else if (payload?.gameId === "stadtlandfluss") {
+      const started = startSlfGame(room);
+      if (started) {
+        ack({ ok: true });
+        broadcastRoom(room.code);
+      } else {
+        ack({ ok: false, error: "Mindestens 2 Spieler nötig." });
+      }
     } else {
       ack({ ok: false, error: "Unbekanntes Spiel." });
     }
@@ -141,6 +164,14 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     if (room.game?.id === "wwe") {
       startWweGame(room);
       broadcastRoom(room.code);
+    } else if (room.game?.id === "guessit") {
+      startGuessItGame(room);
+      broadcastRoom(room.code);
+    } else if (room.game?.id === "cancelculture") {
+      startCancelCultureGame(room);
+      broadcastRoom(room.code);
+    } else if (room.game?.id === "stadtlandfluss") {
+      if (slfNext(room, clientId)) broadcastRoom(room.code);
     }
   });
 
@@ -209,6 +240,28 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     const room = clientId ? findRoomByPlayer(clientId) : undefined;
     if (!room || !clientId) return;
     if (whoamiConfirmGuess(room, clientId, !!payload?.correct)) broadcastRoom(room.code);
+  });
+
+  socket.on("guessit:submit", (payload) => {
+    const clientId = socketToClient.get(socket.id);
+    const room = clientId ? findRoomByPlayer(clientId) : undefined;
+    if (!room || !clientId) return;
+    const guess = Number(payload?.guess);
+    if (submitGuessItGuess(room, clientId, guess)) broadcastRoom(room.code);
+  });
+
+  socket.on("cancelculture:vote", (payload) => {
+    const clientId = socketToClient.get(socket.id);
+    const room = clientId ? findRoomByPlayer(clientId) : undefined;
+    if (!room || !clientId) return;
+    if (submitCancelCultureVote(room, clientId, !!payload?.answer)) broadcastRoom(room.code);
+  });
+
+  socket.on("stadtlandfluss:submitWord", (payload) => {
+    const clientId = socketToClient.get(socket.id);
+    const room = clientId ? findRoomByPlayer(clientId) : undefined;
+    if (!room || !clientId) return;
+    if (slfSubmitWord(room, clientId, payload?.word ?? "")) broadcastRoom(room.code);
   });
 
   socket.on("player:setCharacter", (payload, ack) => {
