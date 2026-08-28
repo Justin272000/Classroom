@@ -71,6 +71,24 @@ h2 {
   gap: 12px;
 }
 
+.card.centered-content {
+  align-items: center;
+  text-align: center;
+}
+
+.qr-wrap {
+  background: #ffffff;
+  padding: 10px;
+  border-radius: 12px;
+  line-height: 0;
+}
+
+.qr-wrap img {
+  display: block;
+  width: 140px;
+  height: 140px;
+}
+
 label {
   display: flex;
   flex-direction: column;

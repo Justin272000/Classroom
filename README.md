@@ -30,9 +30,20 @@ npm run dev:client
 ## Aktueller Stand
 
 - Lobby-System mit 4-stelligem Raumcode, Host-Rolle, Live-Spielerliste.
+- QR-Code in der Lobby zum Beitreten: codiert `<seite>/?code=XXXX`, öffnet die App mit
+  vorausgefülltem Code. Funktioniert nur, wenn die Seite über die WLAN-Adresse des
+  Host-Geräts aufgerufen wurde (Vite zeigt diese beim Start als "Network" an) – über
+  "localhost" scannt niemand anderes etwas Sinnvolles.
 - Erstes Minispiel: **Wer würde eher** (Frage → alle stimmen ab → Ergebnis-Balkendiagramm →
   nächste Frage oder zurück zur Lobby).
 - Platzhalter für **Werwolf** und **Wer bin ich** in der Lobby (noch nicht implementiert).
+
+## Im selben WLAN mit dem Handy spielen
+
+1. `npm run dev` starten.
+2. Im Terminal-Output des Client-Servers die "Network"-Adresse suchen (z.B.
+   `http://192.168.1.23:5173`) und darüber die App öffnen – nicht über `localhost`.
+3. Raum erstellen, QR-Code mit dem Handy scannen (gleiches WLAN vorausgesetzt).
 
 ## Nächste Schritte (Vorschlag)
 

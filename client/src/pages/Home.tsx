@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { socket } from "../socket";
 import type { RoomState } from "../types";
 
@@ -9,12 +9,25 @@ interface Props {
 
 type Mode = "create" | "join";
 
+function codeFromUrl(): string {
+  const raw = new URLSearchParams(window.location.search).get("code") ?? "";
+  return raw.trim().toUpperCase().slice(0, 4);
+}
+
 export default function Home({ clientId, onJoined }: Props) {
-  const [mode, setMode] = useState<Mode>("create");
+  const [mode, setMode] = useState<Mode>(() => (codeFromUrl() ? "join" : "create"));
   const [name, setName] = useState("");
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(codeFromUrl);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // Scanning a room's QR code lands here with ?code=XXXX; drop it from the visible
+  // URL once read so it doesn't linger if the page is bookmarked or reshared.
+  useEffect(() => {
+    if (window.location.search) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();

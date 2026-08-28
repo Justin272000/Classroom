@@ -1,3 +1,5 @@
+import { useState } from "react";
+import QrCode from "../components/QrCode";
 import { socket } from "../socket";
 import type { RoomState } from "../types";
 
@@ -7,8 +9,38 @@ interface Props {
 }
 
 export default function Lobby({ room, isHost }: Props) {
+  const [copied, setCopied] = useState(false);
+  const joinUrl = `${window.location.origin}/?code=${room.code}`;
+
   function startWwe() {
     socket.emit("game:start", { gameId: "wwe" });
+  }
+
+  function copyLink() {
+    const onCopied = () => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    };
+
+    // navigator.clipboard needs a secure context (HTTPS or localhost) and is
+    // undefined otherwise — the case for a friend on plain HTTP via LAN IP.
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(joinUrl).then(onCopied).catch(() => {});
+      return;
+    }
+    const textarea = document.createElement("textarea");
+    textarea.value = joinUrl;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand("copy");
+      onCopied();
+    } catch {
+      // no copy mechanism available; the link/QR code still works manually.
+    }
+    document.body.removeChild(textarea);
   }
 
   return (
@@ -17,7 +49,18 @@ export default function Lobby({ room, isHost }: Props) {
       <div className="room-code">
         Raumcode: <span>{room.code}</span>
       </div>
-      <p className="subtitle">Teile den Code mit deinen Freunden.</p>
+      <p className="subtitle">Teile den Code oder QR-Code mit deinen Freunden.</p>
+
+      <div className="card centered-content">
+        <QrCode value={joinUrl} />
+        <button type="button" className="secondary" onClick={copyLink}>
+          {copied ? "Link kopiert!" : "Link kopieren"}
+        </button>
+        <p className="hint">
+          Scannen öffnet die App direkt mit ausgefülltem Code. Funktioniert nur, wenn diese Seite
+          über die WLAN-Adresse dieses Geräts aufgerufen wurde (nicht "localhost").
+        </p>
+      </div>
 
       <div className="card">
         <h2>Spieler ({room.players.length})</h2>
