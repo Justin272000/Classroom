@@ -371,6 +371,32 @@ button.secondary {
   border-color: var(--accent-2);
 }
 
+.round-timer {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  min-width: 64px;
+  height: 64px;
+  padding: 0 12px;
+  border-radius: 18px;
+  background: rgba(10, 10, 20, 0.78);
+  border: 2px solid var(--border);
+  color: var(--text);
+  font-size: 2rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.round-timer.urgent {
+  border-color: #f87171;
+  color: #f87171;
+}
+
 .carousel-select-btn {
   width: 100%;
   max-width: 240px;

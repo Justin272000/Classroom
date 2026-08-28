@@ -67,6 +67,30 @@ function cleanName(raw: string): string {
   return raw.trim().slice(0, 20);
 }
 
+// wwe/cancelculture rounds auto-reveal after ANSWER_TIME_MS even if not everyone
+// answered. One pending timeout per room; always cleared before a new one is set
+// so a stale timer from an earlier round can never fire against a later one.
+const roundTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function clearRoundTimer(code: string) {
+  const timer = roundTimers.get(code);
+  if (timer) {
+    clearTimeout(timer);
+    roundTimers.delete(code);
+  }
+}
+
+function scheduleRoundTimer(room: Room) {
+  clearRoundTimer(room.code);
+  if (room.game?.id !== "wwe" && room.game?.id !== "cancelculture") return;
+  const timer = setTimeout(() => {
+    roundTimers.delete(room.code);
+    const current = getRoom(room.code);
+    if (current && forceRevealTimedOut(current)) broadcastRoom(current.code);
+  }, ANSWER_TIME_MS);
+  roundTimers.set(room.code, timer);
+}
+
 io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>) => {
   socket.on("room:create", (payload, ack) => {
     const name = cleanName(payload?.name ?? "");
@@ -129,6 +153,7 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     }
     if (payload?.gameId === "wwe") {
       startWweGame(room);
+      scheduleRoundTimer(room);
       ack({ ok: true });
       broadcastRoom(room.code);
     } else if (payload?.gameId === "whoami") {
@@ -145,6 +170,7 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
       broadcastRoom(room.code);
     } else if (payload?.gameId === "cancelculture") {
       startCancelCultureGame(room);
+      scheduleRoundTimer(room);
       ack({ ok: true });
       broadcastRoom(room.code);
     } else if (payload?.gameId === "stadtlandfluss") {
@@ -166,12 +192,14 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     if (!room || room.hostId !== clientId) return;
     if (room.game?.id === "wwe") {
       startWweGame(room);
+      scheduleRoundTimer(room);
       broadcastRoom(room.code);
     } else if (room.game?.id === "guessit") {
       startGuessItGame(room);
       broadcastRoom(room.code);
     } else if (room.game?.id === "cancelculture") {
       startCancelCultureGame(room);
+      scheduleRoundTimer(room);
       broadcastRoom(room.code);
     } else if (room.game?.id === "stadtlandfluss") {
       if (slfNext(room, clientId)) broadcastRoom(room.code);
@@ -182,6 +210,7 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     const clientId = socketToClient.get(socket.id);
     const room = clientId ? findRoomByPlayer(clientId) : undefined;
     if (!room || room.hostId !== clientId) return;
+    clearRoundTimer(room.code);
     endGame(room);
     broadcastRoom(room.code);
   });
@@ -191,7 +220,10 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     const room = clientId ? findRoomByPlayer(clientId) : undefined;
     if (!room || !clientId) return;
     const ok = submitWweVote(room, clientId, payload?.targetPlayerId ?? "");
-    if (ok) broadcastRoom(room.code);
+    if (ok) {
+      if (room.phase === "results") clearRoundTimer(room.code);
+      broadcastRoom(room.code);
+    }
   });
 
   socket.on("whoami:assignName", (payload, ack) => {
@@ -257,7 +289,10 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     const clientId = socketToClient.get(socket.id);
     const room = clientId ? findRoomByPlayer(clientId) : undefined;
     if (!room || !clientId) return;
-    if (submitCancelCultureVote(room, clientId, !!payload?.answer)) broadcastRoom(room.code);
+    if (submitCancelCultureVote(room, clientId, !!payload?.answer)) {
+      if (room.phase === "results") clearRoundTimer(room.code);
+      broadcastRoom(room.code);
+    }
   });
 
   socket.on("stadtlandfluss:submitWord", (payload) => {

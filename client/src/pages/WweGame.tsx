@@ -1,5 +1,6 @@
 import BigPlayerTile from "../components/BigPlayerTile";
 import Lettering from "../components/Lettering";
+import RoundTimer from "../components/RoundTimer";
 import { findGame } from "../games";
 import { pageBackgroundStyle } from "../pageBackground";
 import { socket } from "../socket";
@@ -43,6 +44,7 @@ export default function WweGame({ room, myId, isHost }: Props) {
   return (
     <div className="page centered" style={pageBackgroundStyle(GAME.background)}>
       <Lettering src={GAME.lettering} alt={GAME.name} />
+      {room.phase === "playing" && <RoundTimer deadline={game.deadline} />}
       <p className="question">{game.question}</p>
 
       {room.phase === "playing" && (
