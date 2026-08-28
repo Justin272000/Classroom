@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Avatar from "../components/Avatar";
-import CharacterPicker from "../components/CharacterPicker";
+import CharacterCarousel from "../components/CharacterCarousel";
 import QrCode from "../components/QrCode";
 import { socket } from "../socket";
 import type { RoomState } from "../types";
@@ -85,7 +85,7 @@ export default function Lobby({ room, isHost, myId }: Props) {
 
       <div className="card">
         <h2>Charakter wählen</h2>
-        <CharacterPicker players={room.players} myId={myId} />
+        <CharacterCarousel players={room.players} myId={myId} />
       </div>
 
       <div className="card">

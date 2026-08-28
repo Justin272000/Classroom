@@ -241,50 +241,116 @@ button.secondary {
   flex-shrink: 0;
 }
 
-.character-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-}
-
-.character-tile {
+.carousel {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 14px;
+}
+
+.carousel-track {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.carousel-arrow {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 6px 4px 8px;
+  color: var(--text);
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0;
 }
 
-.character-tile img {
-  width: 100%;
-  aspect-ratio: 1;
+.carousel-side {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   object-fit: cover;
-  object-position: top center;
-  border-radius: 8px;
+  opacity: 0.4;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  flex-shrink: 0;
 }
 
-.character-tile span {
-  font-size: 0.68rem;
-  color: var(--muted);
-  text-align: center;
-  line-height: 1.15;
+.carousel-side:hover {
+  opacity: 0.7;
 }
 
-.character-tile.selected {
+.carousel-current {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.carousel-current-img {
+  width: 160px;
+  height: 160px;
+  border-radius: 22px;
+  object-fit: cover;
+  border: 3px solid var(--border);
+  transition: border-color 0.15s ease;
+}
+
+.carousel-current-img.selected {
   border-color: var(--accent);
+}
+
+.carousel-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.carousel-status {
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.carousel-status.mine {
+  color: var(--accent);
+}
+
+.carousel-status.taken {
+  color: var(--muted);
+}
+
+.carousel-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 0;
+}
+
+.dot.active {
   background: var(--accent);
+  border-color: var(--accent);
 }
 
-.character-tile.selected span {
-  color: white;
+.dot.taken:not(.active) {
+  border-color: var(--accent-2);
 }
 
-.character-tile:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
+.carousel-select-btn {
+  width: 100%;
+  max-width: 240px;
 }
 
 .game-grid {

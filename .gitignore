@@ -5,6 +5,7 @@ dist/
 .DS_Store
 *.log
 
-# Original character reference sheet — the processed tiles that ship with the
-# app live in client/public/characters/; this is just the source it was cut from.
+# Original character source images — the processed tiles that ship with the
+# app live in client/public/characters/; these are just what they were cut from.
 /Charaktere.PNG
+/Charaktere/
