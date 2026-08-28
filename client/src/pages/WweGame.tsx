@@ -1,6 +1,11 @@
 import BigPlayerTile from "../components/BigPlayerTile";
+import Lettering from "../components/Lettering";
+import { findGame } from "../games";
+import { pageBackgroundStyle } from "../pageBackground";
 import { socket } from "../socket";
 import type { Player, RoomState } from "../types";
+
+const GAME = findGame("wwe")!;
 
 interface Props {
   room: RoomState;
@@ -36,8 +41,8 @@ export default function WweGame({ room, myId, isHost }: Props) {
   const winners = results.filter((r) => r.votes === maxVotes && maxVotes > 0);
 
   return (
-    <div className="page centered">
-      <h1>Wer würde eher…</h1>
+    <div className="page centered" style={pageBackgroundStyle(GAME.background)}>
+      <Lettering src={GAME.lettering} alt={GAME.name} />
       <p className="question">{game.question}</p>
 
       {room.phase === "playing" && (

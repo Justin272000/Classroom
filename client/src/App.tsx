@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { getClientId } from "./clientId";
+import { GAMES } from "./games";
 import CancelCultureGame from "./pages/CancelCultureGame";
 import GuessItGame from "./pages/GuessItGame";
 import Home from "./pages/Home";
@@ -13,6 +14,9 @@ import type { RoomState } from "./types";
 export default function App() {
   const [room, setRoom] = useState<RoomState | null>(null);
   const clientId = useRef(getClientId()).current;
+  // Picked once per page load, shared by Home and Lobby so the two screens
+  // match for this visit — a fresh reload picks again for some variety.
+  const sharedBackground = useRef(GAMES[Math.floor(Math.random() * GAMES.length)].background).current;
   // Remembers the room we're in so a dropped connection can silently rejoin
   // under the same identity once socket.io reconnects (new socket.id, same clientId).
   const sessionRef = useRef<{ code: string; name: string } | null>(null);
@@ -48,13 +52,13 @@ export default function App() {
   }
 
   if (!room) {
-    return <Home clientId={clientId} onJoined={handleJoined} />;
+    return <Home clientId={clientId} onJoined={handleJoined} background={sharedBackground} />;
   }
 
   const isHost = room.hostId === clientId;
 
   if (room.phase === "lobby" || !room.game) {
-    return <Lobby room={room} isHost={isHost} myId={clientId} />;
+    return <Lobby room={room} isHost={isHost} myId={clientId} background={sharedBackground} />;
   }
 
   switch (room.game.id) {

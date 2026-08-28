@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Avatar from "../components/Avatar";
 import BigPlayerTile from "../components/BigPlayerTile";
+import Lettering from "../components/Lettering";
+import { findGame } from "../games";
+import { pageBackgroundStyle } from "../pageBackground";
 import { socket } from "../socket";
 import type { Player, RoomState } from "../types";
+
+const GAME = findGame("stadtlandfluss")!;
 
 interface Props {
   room: RoomState;
@@ -99,8 +104,8 @@ export default function StadtLandFlussGame({ room, myId, isHost }: Props) {
   if (transition) {
     const activeOrder = flipped ? transition.to : transition.from;
     return (
-      <div className="page centered">
-        <h1>Zwei Dumme, ein Gedanke</h1>
+      <div className="page centered" style={pageBackgroundStyle(GAME.background)}>
+        <Lettering src={GAME.lettering} alt={GAME.name} />
         <div className="card">
           <h2>Punktestand</h2>
           <div className="leaderboard-wrap" style={{ height: transition.to.length * ROW_HEIGHT }}>
@@ -130,8 +135,8 @@ export default function StadtLandFlussGame({ room, myId, isHost }: Props) {
   }
 
   return (
-    <div className="page centered">
-      <h1>Zwei Dumme, ein Gedanke</h1>
+    <div className="page centered" style={pageBackgroundStyle(GAME.background)}>
+      <Lettering src={GAME.lettering} alt={GAME.name} />
 
       {game.stage !== "finished" && (
         <p className="slf-round">

@@ -1,7 +1,12 @@
 import { useState, type FormEvent } from "react";
 import BigPlayerTile from "../components/BigPlayerTile";
+import Lettering from "../components/Lettering";
+import { findGame } from "../games";
+import { pageBackgroundStyle } from "../pageBackground";
 import { socket } from "../socket";
 import type { Player, RoomState } from "../types";
+
+const GAME = findGame("guessit")!;
 
 interface Props {
   room: RoomState;
@@ -51,8 +56,8 @@ export default function GuessItGame({ room, myId, isHost }: Props) {
   }
 
   return (
-    <div className="page centered">
-      <h1>Schätzfragen</h1>
+    <div className="page centered" style={pageBackgroundStyle(GAME.background)}>
+      <Lettering src={GAME.lettering} alt={GAME.name} />
       <p className="question">{game.question}</p>
 
       {room.phase === "playing" && (

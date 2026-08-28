@@ -2,7 +2,9 @@ import { useState } from "react";
 import BigPlayerTile from "../components/BigPlayerTile";
 import CharacterCarousel from "../components/CharacterCarousel";
 import GameCarousel from "../components/GameCarousel";
+import Lettering from "../components/Lettering";
 import QrCode from "../components/QrCode";
+import { pageBackgroundStyle } from "../pageBackground";
 import { socket } from "../socket";
 import type { GameId, RoomState } from "../types";
 
@@ -10,9 +12,10 @@ interface Props {
   room: RoomState;
   isHost: boolean;
   myId: string | undefined;
+  background: string;
 }
 
-export default function Lobby({ room, isHost, myId }: Props) {
+export default function Lobby({ room, isHost, myId, background }: Props) {
   const [copied, setCopied] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const joinUrl = `${window.location.origin}/?code=${room.code}`;
@@ -52,8 +55,8 @@ export default function Lobby({ room, isHost, myId }: Props) {
   }
 
   return (
-    <div className="page centered">
-      <h1>Lobby</h1>
+    <div className="page centered" style={pageBackgroundStyle(background)}>
+      <Lettering src="/lettering/lobby.webp" alt="Lobby" />
       <div className="room-code">
         Raumcode: <span>{room.code}</span>
       </div>

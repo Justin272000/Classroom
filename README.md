@@ -1,4 +1,4 @@
-# Mindgames
+# Classroom
 
 Web-App für Minispiele mit Freunden – online, per Raumcode, ohne Sprachchat.
 

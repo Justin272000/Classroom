@@ -1,5 +1,10 @@
+import Lettering from "../components/Lettering";
+import { findGame } from "../games";
+import { pageBackgroundStyle } from "../pageBackground";
 import { socket } from "../socket";
 import type { RoomState } from "../types";
+
+const GAME = findGame("cancelculture")!;
 
 interface Props {
   room: RoomState;
@@ -29,8 +34,8 @@ export default function CancelCultureGame({ room, myId, isHost }: Props) {
   const total = (game.results?.yes ?? 0) + (game.results?.no ?? 0);
 
   return (
-    <div className="page centered">
-      <h1>Cancel Culture</h1>
+    <div className="page centered" style={pageBackgroundStyle(GAME.background)}>
+      <Lettering src={GAME.lettering} alt={GAME.name} />
       <p className="question">„{game.statement}“</p>
 
       {room.phase === "playing" && (

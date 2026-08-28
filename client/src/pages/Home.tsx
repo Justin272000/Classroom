@@ -1,10 +1,13 @@
 import { useEffect, useState, type FormEvent } from "react";
+import Lettering from "../components/Lettering";
+import { pageBackgroundStyle } from "../pageBackground";
 import { socket } from "../socket";
 import type { RoomState } from "../types";
 
 interface Props {
   clientId: string;
   onJoined: (state: RoomState, name: string) => void;
+  background: string;
 }
 
 type Mode = "create" | "join";
@@ -14,7 +17,7 @@ function codeFromUrl(): string {
   return raw.trim().toUpperCase().slice(0, 4);
 }
 
-export default function Home({ clientId, onJoined }: Props) {
+export default function Home({ clientId, onJoined, background }: Props) {
   const [mode, setMode] = useState<Mode>(() => (codeFromUrl() ? "join" : "create"));
   const [name, setName] = useState("");
   const [code, setCode] = useState(codeFromUrl);
@@ -53,8 +56,8 @@ export default function Home({ clientId, onJoined }: Props) {
   }
 
   return (
-    <div className="page centered">
-      <h1>Mindgames</h1>
+    <div className="page centered" style={pageBackgroundStyle(background)}>
+      <Lettering src="/lettering/classroom.webp" alt="Classroom" />
       <p className="subtitle">Minispiele mit Freunden – online, ohne miteinander zu sprechen.</p>
 
       <div className="tabs">

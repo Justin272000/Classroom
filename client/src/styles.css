@@ -43,6 +43,15 @@ h1 {
   color: transparent;
 }
 
+.lettering {
+  display: block;
+  width: 80%;
+  max-width: 320px;
+  height: auto;
+  margin: 0 auto 8px;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.45));
+}
+
 h2 {
   font-size: 1rem;
   margin: 0 0 12px;
