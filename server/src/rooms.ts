@@ -32,11 +32,16 @@ import type {
   WweGameState,
 } from "./types.js";
 
+/** Players have this long to answer a wwe question or cancelculture statement
+ * before the server reveals results on its own, whether or not everyone answered. */
+export const ANSWER_TIME_MS = 10_000;
+
 interface InternalWweGame {
   id: "wwe";
   question: string;
   askedQuestions: Set<string>;
   votes: Map<string, string>; // voterId -> targetPlayerId
+  deadline: number;
 }
 
 interface InternalGuessItGame {
@@ -53,6 +58,7 @@ interface InternalCancelCultureGame {
   statement: string;
   askedStatements: Set<string>;
   votes: Map<string, boolean>;
+  deadline: number;
 }
 
 type InternalGame =
@@ -194,7 +200,7 @@ export function startWweGame(room: Room): void {
   const askedQuestions = room.game?.id === "wwe" ? room.game.askedQuestions : new Set<string>();
   const question = pickWweQuestion(askedQuestions);
   askedQuestions.add(question);
-  room.game = { id: "wwe", question, askedQuestions, votes: new Map() };
+  room.game = { id: "wwe", question, askedQuestions, votes: new Map(), deadline: Date.now() + ANSWER_TIME_MS };
   room.phase = "playing";
 }
 
@@ -277,7 +283,13 @@ export function startCancelCultureGame(room: Room): void {
   const askedStatements = room.game?.id === "cancelculture" ? room.game.askedStatements : new Set<string>();
   const statement = pickStatement(askedStatements);
   askedStatements.add(statement);
-  room.game = { id: "cancelculture", statement, askedStatements, votes: new Map() };
+  room.game = {
+    id: "cancelculture",
+    statement,
+    askedStatements,
+    votes: new Map(),
+    deadline: Date.now() + ANSWER_TIME_MS,
+  };
   room.phase = "playing";
 }
 
@@ -319,6 +331,16 @@ export function slfNext(room: Room, playerId: string): boolean {
   return nextSlfRound(room.game);
 }
 
+/** Called when a round's answer-timer expires. Reveals results with whatever
+ * votes came in, same as if everyone had answered. No-ops if the round already
+ * ended some other way (all voted, host advanced, game ended) by the time it fires. */
+export function forceRevealTimedOut(room: Room): boolean {
+  if (room.phase !== "playing") return false;
+  if (room.game?.id !== "wwe" && room.game?.id !== "cancelculture") return false;
+  room.phase = "results";
+  return true;
+}
+
 export function endGame(room: Room): void {
   room.phase = "lobby";
   room.game = null;
@@ -345,7 +367,7 @@ export function toPublicState(room: Room, forPlayerId: string): RoomState {
         .map((p) => ({ playerId: p.id, name: p.name, votes: tally.get(p.id) ?? 0 }))
         .sort((a, b) => b.votes - a.votes);
     }
-    game = { id: "wwe", question: room.game.question, votedPlayerIds, results };
+    game = { id: "wwe", question: room.game.question, votedPlayerIds, results, deadline: room.game.deadline };
   } else if (room.game?.id === "whoami") {
     const g = room.game;
     const questioner = whoamiCurrentPlayerId(g);
@@ -398,7 +420,7 @@ export function toPublicState(room: Room, forPlayerId: string): RoomState {
       for (const v of g.votes.values()) (v ? yes++ : no++);
       results = { yes, no };
     }
-    game = { id: "cancelculture", statement: g.statement, votedPlayerIds, results };
+    game = { id: "cancelculture", statement: g.statement, votedPlayerIds, results, deadline: g.deadline };
   } else if (room.game?.id === "stadtlandfluss") {
     const g = room.game;
     const scores = [...room.players.values()]

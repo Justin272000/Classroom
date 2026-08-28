@@ -14,6 +14,8 @@ export interface WweGameState {
   question: string;
   votedPlayerIds: string[];
   results?: { playerId: string; name: string; votes: number }[];
+  /** epoch ms when the answer window for the current question closes. */
+  deadline: number;
 }
 
 export type WhoamiStage = "assigning" | "asking" | "voting" | "revealed" | "guessing" | "finished";
@@ -56,6 +58,8 @@ export interface CancelCultureGameState {
   votedPlayerIds: string[];
   /** only present once revealed — individual votes are never exposed, by design */
   results?: { yes: number; no: number };
+  /** epoch ms when the answer window for the current statement closes. */
+  deadline: number;
 }
 
 export type SlfStage = "writing" | "results" | "finished";

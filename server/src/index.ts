@@ -3,10 +3,12 @@ import express from "express";
 import { createServer } from "node:http";
 import { Server, type Socket } from "socket.io";
 import {
+  ANSWER_TIME_MS,
   createRoom,
   disconnectPlayer,
   endGame,
   findRoomByPlayer,
+  forceRevealTimedOut,
   getRoom,
   joinRoom,
   removePlayerFromAllRooms,
@@ -28,6 +30,7 @@ import {
   whoamiContinue,
   whoamiGuess,
   whoamiVote,
+  type Room,
 } from "./rooms.js";
 import type { ClientToServerEvents, ServerToClientEvents } from "./types.js";
 
