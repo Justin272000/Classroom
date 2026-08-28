@@ -1,12 +1,15 @@
-import Avatar from "../components/Avatar";
 import BigPlayerTile from "../components/BigPlayerTile";
 import { socket } from "../socket";
-import type { RoomState } from "../types";
+import type { Player, RoomState } from "../types";
 
 interface Props {
   room: RoomState;
   myId: string | undefined;
   isHost: boolean;
+}
+
+function findPlayer(room: RoomState, id: string): Player {
+  return room.players.find((p) => p.id === id) ?? { id, name: "?", connected: true, character: null };
 }
 
 export default function WweGame({ room, myId, isHost }: Props) {
@@ -27,6 +30,10 @@ export default function WweGame({ room, myId, isHost }: Props) {
   function backToLobby() {
     socket.emit("game:end");
   }
+
+  const results = game.results ?? [];
+  const maxVotes = results.length > 0 ? Math.max(...results.map((r) => r.votes)) : 0;
+  const winners = results.filter((r) => r.votes === maxVotes && maxVotes > 0);
 
   return (
     <div className="page centered">
@@ -53,37 +60,26 @@ export default function WweGame({ room, myId, isHost }: Props) {
         </>
       )}
 
-      {room.phase === "results" && game.results && (
-        <div className="card">
-          <h2>Ergebnis</h2>
-          <ul className="results-list">
-            {game.results.map((r) => (
-              <li key={r.playerId}>
-                <span className="results-name">
-                  <Avatar characterId={room.players.find((p) => p.id === r.playerId)?.character} />
-                  {r.name}
-                </span>
-                <div className="bar-track">
-                  <div
-                    className="bar-fill"
-                    style={{ width: `${Math.max(6, (r.votes / Math.max(1, connectedCount)) * 100)}%` }}
-                  />
-                </div>
-                <span className="results-count">{r.votes}</span>
-              </li>
+      {room.phase === "results" && (
+        <>
+          <div className="big-tile-grid">
+            {winners.map((r) => (
+              <BigPlayerTile key={r.playerId} player={findPlayer(room, r.playerId)} highlight />
             ))}
-          </ul>
-          {isHost ? (
-            <div className="actions">
-              <button onClick={next}>Nächste Frage</button>
-              <button className="secondary" onClick={backToLobby}>
-                Zurück zur Lobby
-              </button>
-            </div>
-          ) : (
-            <p className="hint">Warte auf den Host …</p>
-          )}
-        </div>
+          </div>
+          <div className="card centered-content">
+            {isHost ? (
+              <div className="actions">
+                <button onClick={next}>Nächste Frage</button>
+                <button className="secondary" onClick={backToLobby}>
+                  Zurück zur Lobby
+                </button>
+              </div>
+            ) : (
+              <p className="hint">Warte auf den Host …</p>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

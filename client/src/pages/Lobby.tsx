@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Avatar from "../components/Avatar";
+import BigPlayerTile from "../components/BigPlayerTile";
 import CharacterCarousel from "../components/CharacterCarousel";
 import GameCarousel from "../components/GameCarousel";
 import QrCode from "../components/QrCode";
@@ -72,16 +72,16 @@ export default function Lobby({ room, isHost, myId }: Props) {
 
       <div className="card">
         <h2>Spieler ({room.players.length})</h2>
-        <ul className="player-list">
+        <div className="big-tile-grid">
           {room.players.map((p) => (
-            <li key={p.id} className={p.connected ? "" : "disconnected"}>
-              <Avatar characterId={p.character} />
-              {p.name}
-              {p.id === room.hostId && <span className="badge">Host</span>}
-              {!p.connected && <span className="badge muted">getrennt</span>}
-            </li>
+            <BigPlayerTile
+              key={p.id}
+              player={p}
+              dimmed={!p.connected}
+              badge={p.id === room.hostId ? "Host" : !p.connected ? "Getrennt" : undefined}
+            />
           ))}
-        </ul>
+        </div>
       </div>
 
       <div className="card">

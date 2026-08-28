@@ -374,7 +374,8 @@ button.secondary {
 
 .big-tile-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 170px));
+  justify-content: center;
   gap: 14px;
   width: 100%;
   max-width: 420px;
@@ -382,6 +383,7 @@ button.secondary {
 }
 
 .big-tile {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -391,6 +393,29 @@ button.secondary {
   border-radius: 18px;
   padding: 12px;
   color: var(--text);
+}
+
+.big-tile-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  z-index: 1;
+}
+
+.big-tile-badge.positive {
+  background: #4ade80;
+  color: #0a2e1a;
+}
+
+.big-tile.dimmed {
+  opacity: 0.5;
 }
 
 .big-tile-avatar {
@@ -421,7 +446,7 @@ button.secondary {
   color: var(--accent-2);
 }
 
-.big-tile.closest {
+.big-tile.highlighted {
   border-color: #4ade80;
   box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.35);
 }
@@ -616,16 +641,6 @@ button.secondary {
   margin-bottom: 16px;
 }
 
-.slf-points {
-  font-weight: 700;
-  color: var(--muted);
-  flex-shrink: 0;
-  margin-left: auto;
-}
-
-.slf-points.scored {
-  color: #4ade80;
-}
 
 .podium-list {
   list-style: none;
@@ -670,4 +685,16 @@ button.secondary {
   margin-left: auto;
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.leaderboard-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.leaderboard-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  transition: top 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
