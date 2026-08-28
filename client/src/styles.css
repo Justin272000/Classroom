@@ -306,12 +306,6 @@ button.secondary {
   border-color: var(--accent);
 }
 
-.carousel-name {
-  font-size: 1.15rem;
-  font-weight: 700;
-  margin: 0;
-}
-
 .carousel-status {
   font-size: 0.8rem;
   margin: 0;

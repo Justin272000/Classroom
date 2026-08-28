@@ -57,7 +57,6 @@ export default function CharacterCarousel({ players, myId }: Props) {
             src={current.image}
             alt={current.name}
           />
-          <p className="carousel-name">{current.name}</p>
           {isMine && <p className="carousel-status mine">Deine Wahl ✓</p>}
           {!isMine && takenByName && <p className="carousel-status taken">Vergeben an {takenByName}</p>}
         </div>
