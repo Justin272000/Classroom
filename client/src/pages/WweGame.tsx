@@ -1,4 +1,5 @@
 import Avatar from "../components/Avatar";
+import BigPlayerTile from "../components/BigPlayerTile";
 import { socket } from "../socket";
 import type { RoomState } from "../types";
 
@@ -34,20 +35,15 @@ export default function WweGame({ room, myId, isHost }: Props) {
 
       {room.phase === "playing" && (
         <>
-          <div className="card">
-            <div className="player-grid">
-              {room.players.map((p) => (
-                <button
-                  key={p.id}
-                  className="player-tile"
-                  disabled={hasVoted || !p.connected}
-                  onClick={() => vote(p.id)}
-                >
-                  <Avatar characterId={p.character} />
-                  {p.name}
-                </button>
-              ))}
-            </div>
+          <div className="big-tile-grid">
+            {room.players.map((p) => (
+              <BigPlayerTile
+                key={p.id}
+                player={p}
+                disabled={hasVoted || !p.connected}
+                onClick={() => vote(p.id)}
+              />
+            ))}
           </div>
           <p className="hint">
             {hasVoted

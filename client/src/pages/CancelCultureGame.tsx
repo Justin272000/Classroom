@@ -40,13 +40,15 @@ export default function CancelCultureGame({ room, myId, isHost }: Props) {
               Warte auf die anderen … ({game.votedPlayerIds.length}/{connectedCount})
             </p>
           ) : (
-            <div className="answer-grid">
-              <button className="answer-tile yes" onClick={() => vote(true)}>
-                JA!
-              </button>
-              <button className="answer-tile no" onClick={() => vote(false)}>
-                NEIN!
-              </button>
+            <div className="card">
+              <div className="answer-grid">
+                <button className="answer-tile yes" onClick={() => vote(true)}>
+                  JA!
+                </button>
+                <button className="answer-tile no" onClick={() => vote(false)}>
+                  NEIN!
+                </button>
+              </div>
             </div>
           )}
         </>

@@ -1,11 +1,16 @@
 import { useState, type FormEvent } from "react";
+import BigPlayerTile from "../components/BigPlayerTile";
 import { socket } from "../socket";
-import type { RoomState } from "../types";
+import type { Player, RoomState } from "../types";
 
 interface Props {
   room: RoomState;
   myId: string | undefined;
   isHost: boolean;
+}
+
+function findPlayer(room: RoomState, id: string): Player {
+  return room.players.find((p) => p.id === id) ?? { id, name: "?", connected: true, character: null };
 }
 
 export default function GuessItGame({ room, myId, isHost }: Props) {
@@ -33,7 +38,17 @@ export default function GuessItGame({ room, myId, isHost }: Props) {
   }
 
   const results = game.results ?? [];
-  const maxValue = Math.max(game.answer ?? 0, ...results.map((r) => Math.abs(r.guess)), 1);
+  let closestId: string | null = null;
+  if (typeof game.answer === "number" && results.length > 0) {
+    let bestDiff = Infinity;
+    for (const r of results) {
+      const diff = Math.abs(r.guess - game.answer);
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        closestId = r.playerId;
+      }
+    }
+  }
 
   return (
     <div className="page centered">
@@ -67,44 +82,40 @@ export default function GuessItGame({ room, myId, isHost }: Props) {
       )}
 
       {room.phase === "results" && (
-        <div className="card">
-          <h2>Auflösung</h2>
-          <ul className="results-list">
-            {typeof game.answer === "number" && (
-              <li className="guessit-answer-row">
-                <span className="results-name">Antwort</span>
-                <div className="bar-track">
-                  <div className="bar-fill answer" style={{ width: `${(game.answer / maxValue) * 100}%` }} />
-                </div>
-                <span className="results-count">
-                  {game.answer.toLocaleString("de-DE")} {game.unit}
-                </span>
-              </li>
-            )}
-            {results.map((r) => (
-              <li key={r.playerId}>
-                <span className="results-name">{r.name}</span>
-                <div className="bar-track">
-                  <div
-                    className="bar-fill"
-                    style={{ width: `${Math.max(4, (Math.abs(r.guess) / maxValue) * 100)}%` }}
-                  />
-                </div>
-                <span className="results-count">{r.guess.toLocaleString("de-DE")}</span>
-              </li>
-            ))}
-          </ul>
-          {isHost ? (
-            <div className="actions">
-              <button onClick={next}>Nächste Frage</button>
-              <button className="secondary" onClick={backToLobby}>
-                Zurück zur Lobby
-              </button>
+        <>
+          {typeof game.answer === "number" && (
+            <div className="guessit-answer-display">
+              <span className="guessit-answer-label">Richtige Antwort</span>
+              <span className="guessit-answer-value">
+                {game.answer.toLocaleString("de-DE")} {game.unit}
+              </span>
             </div>
-          ) : (
-            <p className="hint">Warte auf den Host …</p>
           )}
-        </div>
+
+          <div className="big-tile-grid">
+            {results.map((r) => (
+              <BigPlayerTile
+                key={r.playerId}
+                player={findPlayer(room, r.playerId)}
+                value={r.guess.toLocaleString("de-DE")}
+                highlight={r.playerId === closestId}
+              />
+            ))}
+          </div>
+
+          <div className="card centered-content">
+            {isHost ? (
+              <div className="actions">
+                <button onClick={next}>Nächste Frage</button>
+                <button className="secondary" onClick={backToLobby}>
+                  Zurück zur Lobby
+                </button>
+              </div>
+            ) : (
+              <p className="hint">Warte auf den Host …</p>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
