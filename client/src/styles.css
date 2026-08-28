@@ -457,6 +457,7 @@ button.secondary {
 .inline-player {
   display: inline-flex;
   align-items: center;
+  vertical-align: middle;
   font-weight: 600;
 }
 
