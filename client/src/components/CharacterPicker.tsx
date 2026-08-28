@@ -13,26 +13,27 @@ export default function CharacterPicker({ players, myId }: Props) {
     players.filter((p) => p.id !== myId && p.character).map((p) => [p.character as string, p.name])
   );
 
-  function pick(character: string) {
-    if (takenBy.has(character)) return;
-    socket.emit("player:setCharacter", { character }, () => {});
+  function pick(characterId: string) {
+    if (takenBy.has(characterId)) return;
+    socket.emit("player:setCharacter", { character: characterId }, () => {});
   }
 
   return (
     <div className="character-grid">
       {CHARACTERS.map((c) => {
-        const takenName = takenBy.get(c);
-        const isMine = me?.character === c;
+        const takenName = takenBy.get(c.id);
+        const isMine = me?.character === c.id;
         return (
           <button
-            key={c}
+            key={c.id}
             type="button"
             className={`character-tile${isMine ? " selected" : ""}`}
             disabled={!!takenName}
-            title={takenName ? `Vergeben an ${takenName}` : undefined}
-            onClick={() => pick(c)}
+            title={takenName ? `Vergeben an ${takenName}` : c.name}
+            onClick={() => pick(c.id)}
           >
-            {c}
+            <img src={c.image} alt={c.name} />
+            <span>{c.name}</span>
           </button>
         );
       })}

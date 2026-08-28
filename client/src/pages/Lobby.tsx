@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Avatar from "../components/Avatar";
 import CharacterPicker from "../components/CharacterPicker";
 import QrCode from "../components/QrCode";
 import { socket } from "../socket";
@@ -69,7 +70,7 @@ export default function Lobby({ room, isHost, myId }: Props) {
         <ul className="player-list">
           {room.players.map((p) => (
             <li key={p.id} className={p.connected ? "" : "disconnected"}>
-              <span className="player-avatar">{p.character ?? "❔"}</span>
+              <Avatar characterId={p.character} />
               {p.name}
               {p.id === room.hostId && <span className="badge">Host</span>}
               {!p.connected && <span className="badge muted">getrennt</span>}

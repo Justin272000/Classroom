@@ -229,6 +229,18 @@ button.secondary {
   line-height: 1;
 }
 
+.player-avatar-img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top center;
+  margin-right: 8px;
+  vertical-align: middle;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
 .character-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -236,12 +248,29 @@ button.secondary {
 }
 
 .character-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 10px;
-  font-size: 1.5rem;
-  line-height: 1;
-  padding: 10px 0;
+  padding: 6px 4px 8px;
+}
+
+.character-tile img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 8px;
+}
+
+.character-tile span {
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.15;
 }
 
 .character-tile.selected {
@@ -249,8 +278,12 @@ button.secondary {
   background: var(--accent);
 }
 
+.character-tile.selected span {
+  color: white;
+}
+
 .character-tile:disabled {
-  opacity: 0.25;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
@@ -301,6 +334,9 @@ button.secondary {
 }
 
 .player-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: var(--surface-2);
   border: 1px solid var(--border);
   color: var(--text);

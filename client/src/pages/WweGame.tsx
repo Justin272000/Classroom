@@ -1,3 +1,4 @@
+import Avatar from "../components/Avatar";
 import { socket } from "../socket";
 import type { RoomState } from "../types";
 
@@ -42,7 +43,7 @@ export default function WweGame({ room, myId, isHost }: Props) {
                   disabled={hasVoted || !p.connected}
                   onClick={() => vote(p.id)}
                 >
-                  <span className="player-avatar">{p.character ?? "❔"}</span>
+                  <Avatar characterId={p.character} />
                   {p.name}
                 </button>
               ))}
@@ -63,9 +64,7 @@ export default function WweGame({ room, myId, isHost }: Props) {
             {game.results.map((r) => (
               <li key={r.playerId}>
                 <span className="results-name">
-                  <span className="player-avatar">
-                    {room.players.find((p) => p.id === r.playerId)?.character ?? "❔"}
-                  </span>
+                  <Avatar characterId={room.players.find((p) => p.id === r.playerId)?.character} />
                   {r.name}
                 </span>
                 <div className="bar-track">
