@@ -39,7 +39,7 @@ export default function StadtLandFlussGame({ room, myId, isHost }: Props) {
 
   return (
     <div className="page centered">
-      <h1>Stadt, Land, Fluss</h1>
+      <h1>Zwei Dumme, ein Gedanke</h1>
 
       {game.stage !== "finished" && (
         <p className="slf-round">

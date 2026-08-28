@@ -292,6 +292,10 @@ button.secondary {
   opacity: 0.7;
 }
 
+.carousel-side.game-cover {
+  height: 60px;
+}
+
 .carousel-current {
   display: flex;
   flex-direction: column;
@@ -312,6 +316,10 @@ button.secondary {
 
 .carousel-current-img.selected {
   border-color: var(--accent);
+}
+
+.carousel-current-img.game-cover {
+  height: 200px;
 }
 
 .carousel-status {
@@ -355,37 +363,6 @@ button.secondary {
   max-width: 240px;
 }
 
-.game-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-}
-
-.game-tile {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px 16px;
-  text-align: left;
-  color: var(--text);
-}
-
-.game-tile strong {
-  font-size: 1rem;
-}
-
-.game-tile span {
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-
-.game-tile.disabled {
-  opacity: 0.4;
-}
 
 .question {
   max-width: 460px;

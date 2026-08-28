@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Avatar from "../components/Avatar";
 import CharacterCarousel from "../components/CharacterCarousel";
+import GameCarousel from "../components/GameCarousel";
 import QrCode from "../components/QrCode";
 import { socket } from "../socket";
 import type { GameId, RoomState } from "../types";
@@ -90,34 +91,7 @@ export default function Lobby({ room, isHost, myId }: Props) {
 
       <div className="card">
         <h2>Minispiel wählen</h2>
-        <div className="game-grid">
-          <button className="game-tile" disabled={!isHost} onClick={() => startGame("wwe")}>
-            <strong>Wer würde eher</strong>
-            <span>Abstimmen, wer am ehesten passt</span>
-          </button>
-          <button className="game-tile" disabled={!isHost} onClick={() => startGame("whoami")}>
-            <strong>Wer bin ich</strong>
-            <span>Identität erraten per Ja/Nein-Fragen</span>
-          </button>
-          <button className="game-tile" disabled={!isHost} onClick={() => startGame("guessit")}>
-            <strong>Guess it!</strong>
-            <span>Schätzfragen, alle Antworten im Vergleich</span>
-          </button>
-          <button className="game-tile" disabled={!isHost} onClick={() => startGame("cancelculture")}>
-            <strong>Cancel Culture</strong>
-            <span>Ja oder Nein zu steilen Thesen, anonym</span>
-          </button>
-          <button className="game-tile" disabled={!isHost} onClick={() => startGame("stadtlandfluss")}>
-            <strong>Stadt, Land, Fluss</strong>
-            <span>10 Runden, Punkte für Übereinstimmungen</span>
-          </button>
-          <div className="game-tile disabled">
-            <strong>Werwolf</strong>
-            <span>Bald verfügbar</span>
-          </div>
-        </div>
-        {!isHost && <p className="hint">Nur der Host kann ein Spiel starten.</p>}
-        {startError && <p className="error">{startError}</p>}
+        <GameCarousel isHost={isHost} onStart={startGame} error={startError} />
       </div>
     </div>
   );

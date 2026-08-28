@@ -52,7 +52,7 @@ export default function GuessItGame({ room, myId, isHost }: Props) {
 
   return (
     <div className="page centered">
-      <h1>Guess it!</h1>
+      <h1>Schätzfragen</h1>
       <p className="question">{game.question}</p>
 
       {room.phase === "playing" && (

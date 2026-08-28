@@ -9,3 +9,4 @@ dist/
 # app live in client/public/characters/; these are just what they were cut from.
 /Charaktere.PNG
 /Charaktere/
+/Spielecover/
