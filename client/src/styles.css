@@ -314,6 +314,10 @@ button.secondary {
   min-width: 0;
 }
 
+.carousel-tagline {
+  max-width: 160px;
+}
+
 .carousel-current-img {
   width: 160px;
   height: 160px;
