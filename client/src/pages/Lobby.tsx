@@ -1,4 +1,5 @@
 import { useState } from "react";
+import CharacterPicker from "../components/CharacterPicker";
 import QrCode from "../components/QrCode";
 import { socket } from "../socket";
 import type { RoomState } from "../types";
@@ -6,9 +7,10 @@ import type { RoomState } from "../types";
 interface Props {
   room: RoomState;
   isHost: boolean;
+  myId: string | undefined;
 }
 
-export default function Lobby({ room, isHost }: Props) {
+export default function Lobby({ room, isHost, myId }: Props) {
   const [copied, setCopied] = useState(false);
   const joinUrl = `${window.location.origin}/?code=${room.code}`;
 
@@ -67,12 +69,18 @@ export default function Lobby({ room, isHost }: Props) {
         <ul className="player-list">
           {room.players.map((p) => (
             <li key={p.id} className={p.connected ? "" : "disconnected"}>
+              <span className="player-avatar">{p.character ?? "❔"}</span>
               {p.name}
               {p.id === room.hostId && <span className="badge">Host</span>}
               {!p.connected && <span className="badge muted">getrennt</span>}
             </li>
           ))}
         </ul>
+      </div>
+
+      <div className="card">
+        <h2>Charakter wählen</h2>
+        <CharacterPicker players={room.players} myId={myId} />
       </div>
 
       <div className="card">

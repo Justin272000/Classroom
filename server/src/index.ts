@@ -10,6 +10,7 @@ import {
   getRoom,
   joinRoom,
   removePlayerFromAllRooms,
+  setCharacter,
   startWweGame,
   submitVote,
   toPublicState,
@@ -126,6 +127,22 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     if (!room || !clientId) return;
     const ok = submitVote(room, clientId, payload?.targetPlayerId ?? "");
     if (ok) broadcastRoom(room.code);
+  });
+
+  socket.on("player:setCharacter", (payload, ack) => {
+    const clientId = socketToClient.get(socket.id);
+    const room = clientId ? findRoomByPlayer(clientId) : undefined;
+    if (!room || !clientId) {
+      ack({ ok: false, error: "Nicht in einem Raum." });
+      return;
+    }
+    const ok = setCharacter(room, clientId, payload?.character ?? "");
+    if (ok) {
+      ack({ ok: true });
+      broadcastRoom(room.code);
+    } else {
+      ack({ ok: false, error: "Charakter nicht verfügbar." });
+    }
   });
 
   socket.on("disconnect", () => {

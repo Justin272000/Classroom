@@ -42,6 +42,7 @@ export default function WweGame({ room, myId, isHost }: Props) {
                   disabled={hasVoted || !p.connected}
                   onClick={() => vote(p.id)}
                 >
+                  <span className="player-avatar">{p.character ?? "❔"}</span>
                   {p.name}
                 </button>
               ))}
@@ -61,7 +62,12 @@ export default function WweGame({ room, myId, isHost }: Props) {
           <ul className="results-list">
             {game.results.map((r) => (
               <li key={r.playerId}>
-                <span className="results-name">{r.name}</span>
+                <span className="results-name">
+                  <span className="player-avatar">
+                    {room.players.find((p) => p.id === r.playerId)?.character ?? "❔"}
+                  </span>
+                  {r.name}
+                </span>
                 <div className="bar-track">
                   <div
                     className="bar-fill"

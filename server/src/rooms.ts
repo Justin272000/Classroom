@@ -1,3 +1,4 @@
+import { isCharacter } from "./characters.js";
 import { pickQuestion } from "./games/wwe.js";
 import type { Player, RoomState, WweGameState } from "./types.js";
 
@@ -47,7 +48,7 @@ export function createRoom(hostId: string, hostName: string): Room {
   const room: Room = {
     code,
     hostId,
-    players: new Map([[hostId, { id: hostId, name: hostName, connected: true }]]),
+    players: new Map([[hostId, { id: hostId, name: hostName, connected: true, character: null }]]),
     phase: "lobby",
     game: null,
   };
@@ -62,9 +63,22 @@ export function getRoom(code: string): Room | undefined {
 export function joinRoom(code: string, playerId: string, name: string): Room | undefined {
   const room = getRoom(code);
   if (!room) return undefined;
-  room.players.set(playerId, { id: playerId, name, connected: true });
+  // Preserve a returning player's character pick (e.g. a reconnect rejoin);
+  // only a genuinely new player starts without one.
+  const character = room.players.get(playerId)?.character ?? null;
+  room.players.set(playerId, { id: playerId, name, connected: true, character });
   cancelPendingDeletion(room.code);
   return room;
+}
+
+export function setCharacter(room: Room, playerId: string, character: string): boolean {
+  if (!isCharacter(character)) return false;
+  const player = room.players.get(playerId);
+  if (!player) return false;
+  const takenByOther = [...room.players.values()].some((p) => p.id !== playerId && p.character === character);
+  if (takenByOther) return false;
+  player.character = character;
+  return true;
 }
 
 export function findRoomByPlayer(playerId: string): Room | undefined {

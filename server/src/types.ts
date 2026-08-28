@@ -2,6 +2,7 @@ export interface Player {
   id: string;
   name: string;
   connected: boolean;
+  character: string | null;
 }
 
 export type RoomPhase = "lobby" | "playing" | "results";
@@ -36,6 +37,10 @@ export interface ClientToServerEvents {
   "game:next": () => void;
   "game:end": () => void;
   "wwe:vote": (payload: { targetPlayerId: string }) => void;
+  "player:setCharacter": (
+    payload: { character: string },
+    ack: (res: { ok: true } | { ok: false; error: string }) => void
+  ) => void;
 }
 
 export interface ServerToClientEvents {

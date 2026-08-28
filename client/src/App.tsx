@@ -50,7 +50,7 @@ export default function App() {
   const isHost = room.hostId === clientId;
 
   if (room.phase === "lobby" || !room.game) {
-    return <Lobby room={room} isHost={isHost} />;
+    return <Lobby room={room} isHost={isHost} myId={clientId} />;
   }
 
   return <WweGame room={room} myId={clientId} isHost={isHost} />;
