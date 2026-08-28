@@ -37,7 +37,6 @@ export default function CancelCultureGame({ room, myId, isHost }: Props) {
   return (
     <div className="page centered" style={pageBackgroundStyle(GAME.background)}>
       <Lettering src={GAME.lettering} alt={GAME.name} />
-      {room.phase === "playing" && <RoundTimer deadline={game.deadline} />}
       <p className="question">„{game.statement}“</p>
 
       {room.phase === "playing" && (
@@ -58,6 +57,7 @@ export default function CancelCultureGame({ room, myId, isHost }: Props) {
               </div>
             </div>
           )}
+          <RoundTimer deadline={game.deadline} />
         </>
       )}
 

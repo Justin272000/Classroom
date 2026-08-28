@@ -44,7 +44,6 @@ export default function WweGame({ room, myId, isHost }: Props) {
   return (
     <div className="page centered" style={pageBackgroundStyle(GAME.background)}>
       <Lettering src={GAME.lettering} alt={GAME.name} />
-      {room.phase === "playing" && <RoundTimer deadline={game.deadline} />}
       <p className="question">{game.question}</p>
 
       {room.phase === "playing" && (
@@ -59,6 +58,7 @@ export default function WweGame({ room, myId, isHost }: Props) {
               />
             ))}
           </div>
+          <RoundTimer deadline={game.deadline} />
           <p className="hint">
             {hasVoted
               ? `Warte auf die anderen … (${game.votedPlayerIds.length}/${connectedCount})`
