@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { getClientId } from "./clientId";
 import Home from "./pages/Home";
 import Lobby from "./pages/Lobby";
+import WhoamiGame from "./pages/WhoamiGame";
 import WweGame from "./pages/WweGame";
 import { socket } from "./socket";
 import type { RoomState } from "./types";
@@ -51,6 +52,10 @@ export default function App() {
 
   if (room.phase === "lobby" || !room.game) {
     return <Lobby room={room} isHost={isHost} myId={clientId} />;
+  }
+
+  if (room.game.id === "whoami") {
+    return <WhoamiGame room={room} myId={clientId} isHost={isHost} />;
   }
 
   return <WweGame room={room} myId={clientId} isHost={isHost} />;

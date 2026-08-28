@@ -7,7 +7,7 @@ export interface Player {
 
 export type RoomPhase = "lobby" | "playing" | "results";
 
-export type GameId = "wwe";
+export type GameId = "wwe" | "whoami";
 
 export interface WweGameState {
   id: "wwe";
@@ -16,12 +16,35 @@ export interface WweGameState {
   results?: { playerId: string; name: string; votes: number }[];
 }
 
+export type WhoamiStage = "assigning" | "asking" | "voting" | "revealed" | "guessing" | "finished";
+
+export interface WhoamiIdentityView {
+  targetId: string;
+  assignerId: string;
+  name: string | null;
+}
+
+export interface WhoamiGameState {
+  id: "whoami";
+  stage: WhoamiStage;
+  identities: WhoamiIdentityView[];
+  turnOrder: string[];
+  currentPlayerId: string | null;
+  assignedSubmittedIds: string[];
+  question: string | null;
+  votedIds: string[];
+  eligibleVoterCount: number;
+  lastAnswer: boolean | null;
+  pendingGuess: string | null;
+  solved: string[];
+}
+
 export interface RoomState {
   code: string;
   hostId: string;
   players: Player[];
   phase: RoomPhase;
-  game: WweGameState | null;
+  game: WweGameState | WhoamiGameState | null;
 }
 
 export interface ClientToServerEvents {
@@ -33,10 +56,22 @@ export interface ClientToServerEvents {
     payload: { code: string; name: string; clientId: string },
     ack: (res: { ok: true; state: RoomState } | { ok: false; error: string }) => void
   ) => void;
-  "game:start": (payload: { gameId: GameId }) => void;
+  "game:start": (
+    payload: { gameId: GameId },
+    ack: (res: { ok: true } | { ok: false; error: string }) => void
+  ) => void;
   "game:next": () => void;
   "game:end": () => void;
   "wwe:vote": (payload: { targetPlayerId: string }) => void;
+  "whoami:assignName": (
+    payload: { name: string },
+    ack: (res: { ok: true } | { ok: false; error: string }) => void
+  ) => void;
+  "whoami:ask": (payload: { question: string }) => void;
+  "whoami:vote": (payload: { answer: boolean }) => void;
+  "whoami:guess": (payload: { guess: string }) => void;
+  "whoami:confirmGuess": (payload: { correct: boolean }) => void;
+  "whoami:continue": () => void;
   "player:setCharacter": (
     payload: { character: string },
     ack: (res: { ok: true } | { ok: false; error: string }) => void

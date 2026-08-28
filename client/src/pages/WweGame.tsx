@@ -10,7 +10,7 @@ interface Props {
 
 export default function WweGame({ room, myId, isHost }: Props) {
   const game = room.game;
-  if (!game) return null;
+  if (!game || game.id !== "wwe") return null;
 
   const hasVoted = myId ? game.votedPlayerIds.includes(myId) : false;
   const connectedCount = room.players.filter((p) => p.connected).length;

@@ -13,10 +13,14 @@ interface Props {
 
 export default function Lobby({ room, isHost, myId }: Props) {
   const [copied, setCopied] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
   const joinUrl = `${window.location.origin}/?code=${room.code}`;
 
-  function startWwe() {
-    socket.emit("game:start", { gameId: "wwe" });
+  function startGame(gameId: "wwe" | "whoami") {
+    setStartError(null);
+    socket.emit("game:start", { gameId }, (res) => {
+      if (!res.ok) setStartError(res.error);
+    });
   }
 
   function copyLink() {
@@ -87,20 +91,21 @@ export default function Lobby({ room, isHost, myId }: Props) {
       <div className="card">
         <h2>Minispiel wählen</h2>
         <div className="game-grid">
-          <button className="game-tile" disabled={!isHost} onClick={startWwe}>
+          <button className="game-tile" disabled={!isHost} onClick={() => startGame("wwe")}>
             <strong>Wer würde eher</strong>
             <span>Abstimmen, wer am ehesten passt</span>
+          </button>
+          <button className="game-tile" disabled={!isHost} onClick={() => startGame("whoami")}>
+            <strong>Wer bin ich</strong>
+            <span>Identität erraten per Ja/Nein-Fragen</span>
           </button>
           <div className="game-tile disabled">
             <strong>Werwolf</strong>
             <span>Bald verfügbar</span>
           </div>
-          <div className="game-tile disabled">
-            <strong>Wer bin ich</strong>
-            <span>Bald verfügbar</span>
-          </div>
         </div>
         {!isHost && <p className="hint">Nur der Host kann ein Spiel starten.</p>}
+        {startError && <p className="error">{startError}</p>}
       </div>
     </div>
   );

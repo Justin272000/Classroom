@@ -1,6 +1,18 @@
 import { isCharacter } from "./characters.js";
 import { pickQuestion } from "./games/wwe.js";
-import type { Player, RoomState, WweGameState } from "./types.js";
+import {
+  askQuestion,
+  confirmGuess,
+  continueAfterReveal,
+  currentPlayerId as whoamiCurrentPlayerId,
+  eligibleVoterCount,
+  startWhoami,
+  submitAssignment,
+  submitGuess,
+  submitVote as submitWhoamiVoteInternal,
+  type InternalWhoamiGame,
+} from "./games/whoami.js";
+import type { Player, RoomState, WhoamiGameState, WweGameState } from "./types.js";
 
 interface InternalWweGame {
   id: "wwe";
@@ -14,7 +26,7 @@ interface Room {
   hostId: string;
   players: Map<string, Player>;
   phase: "lobby" | "playing" | "results";
-  game: InternalWweGame | null;
+  game: InternalWweGame | InternalWhoamiGame | null;
 }
 
 const rooms = new Map<string, Room>();
@@ -145,29 +157,69 @@ export function startWweGame(room: Room): void {
   room.phase = "playing";
 }
 
-export function endGame(room: Room): void {
-  room.phase = "lobby";
-  room.game = null;
-}
-
-export function submitVote(room: Room, voterId: string, targetPlayerId: string): boolean {
-  if (room.phase !== "playing" || !room.game) return false;
+export function submitWweVote(room: Room, voterId: string, targetPlayerId: string): boolean {
+  if (room.phase !== "playing" || room.game?.id !== "wwe") return false;
   if (!room.players.has(targetPlayerId)) return false;
   if (!room.players.has(voterId) || !room.players.get(voterId)?.connected) return false;
 
   room.game.votes.set(voterId, targetPlayerId);
 
   const connectedIds = [...room.players.values()].filter((p) => p.connected).map((p) => p.id);
-  const allVoted = connectedIds.every((id) => room.game!.votes.has(id));
+  const allVoted = connectedIds.every((id) => (room.game as InternalWweGame).votes.has(id));
   if (allVoted) {
     room.phase = "results";
   }
   return true;
 }
 
-export function toPublicState(room: Room): RoomState {
-  let game: WweGameState | null = null;
-  if (room.game) {
+export function startWhoamiGame(room: Room): boolean {
+  const connectedIds = [...room.players.values()].filter((p) => p.connected).map((p) => p.id);
+  const game = startWhoami(connectedIds);
+  if (!game) return false;
+  room.game = game;
+  room.phase = "playing";
+  return true;
+}
+
+export function whoamiAssignName(room: Room, playerId: string, name: string): boolean {
+  if (room.game?.id !== "whoami") return false;
+  return submitAssignment(room.game, playerId, name);
+}
+
+export function whoamiAsk(room: Room, playerId: string, question: string): boolean {
+  if (room.game?.id !== "whoami") return false;
+  return askQuestion(room.game, playerId, question);
+}
+
+export function whoamiVote(room: Room, playerId: string, answer: boolean): boolean {
+  if (room.game?.id !== "whoami") return false;
+  return submitWhoamiVoteInternal(room.game, playerId, answer, room.players);
+}
+
+export function whoamiContinue(room: Room, playerId: string): boolean {
+  if (room.game?.id !== "whoami") return false;
+  return continueAfterReveal(room.game, playerId, room.players);
+}
+
+export function whoamiGuess(room: Room, playerId: string, guess: string): boolean {
+  if (room.game?.id !== "whoami") return false;
+  return submitGuess(room.game, playerId, guess);
+}
+
+export function whoamiConfirmGuess(room: Room, playerId: string, correct: boolean): boolean {
+  if (room.game?.id !== "whoami") return false;
+  return confirmGuess(room.game, playerId, correct, room.players);
+}
+
+export function endGame(room: Room): void {
+  room.phase = "lobby";
+  room.game = null;
+}
+
+export function toPublicState(room: Room, forPlayerId: string): RoomState {
+  let game: WweGameState | WhoamiGameState | null = null;
+
+  if (room.game?.id === "wwe") {
     const votedPlayerIds = [...room.game.votes.keys()];
     let results: WweGameState["results"];
     if (room.phase === "results") {
@@ -180,7 +232,37 @@ export function toPublicState(room: Room): RoomState {
         .sort((a, b) => b.votes - a.votes);
     }
     game = { id: "wwe", question: room.game.question, votedPlayerIds, results };
+  } else if (room.game?.id === "whoami") {
+    const g = room.game;
+    const questioner = whoamiCurrentPlayerId(g);
+    const identities = g.assignments.map((a) => {
+      const visibleToViewer =
+        a.assignerId === forPlayerId ||
+        g.solved.has(a.targetId) ||
+        g.stage === "finished" ||
+        (a.targetId === questioner && forPlayerId !== a.targetId);
+      return {
+        targetId: a.targetId,
+        assignerId: a.assignerId,
+        name: visibleToViewer ? a.name : null,
+      };
+    });
+    game = {
+      id: "whoami",
+      stage: g.stage,
+      identities,
+      turnOrder: g.turnOrder,
+      currentPlayerId: questioner,
+      assignedSubmittedIds: g.assignments.filter((a) => a.name !== null).map((a) => a.targetId),
+      question: g.question,
+      votedIds: [...g.votes.keys()],
+      eligibleVoterCount: eligibleVoterCount(g, room.players),
+      lastAnswer: g.stage === "revealed" ? g.lastAnswer : null,
+      pendingGuess: g.pendingGuess,
+      solved: [...g.solved],
+    };
   }
+
   return {
     code: room.code,
     hostId: room.hostId,

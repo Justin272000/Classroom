@@ -393,3 +393,89 @@ button.secondary {
 .actions button {
   flex: 1;
 }
+
+.inline-player {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+}
+
+.inline-player .player-avatar-img {
+  margin-right: 6px;
+}
+
+.whoami-identity {
+  font-size: 1rem;
+}
+
+.whoami-question-text {
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-align: center;
+  margin: 0 0 4px;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 4px 0;
+}
+
+.answer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.answer-tile {
+  padding: 24px 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.answer-tile.yes {
+  background: #2f9e5b;
+}
+
+.answer-tile.no {
+  background: #c0455a;
+}
+
+.reveal-banner {
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 4px 0 12px;
+}
+
+.reveal-banner.yes {
+  color: #4ade80;
+}
+
+.reveal-banner.no {
+  color: #f87171;
+}
+
+.identity-reveal-list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.identity-reveal-list li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  background: var(--surface-2);
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.identity-reveal-name {
+  font-weight: 700;
+  color: var(--accent-2);
+}

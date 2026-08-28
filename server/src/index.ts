@@ -11,9 +11,16 @@ import {
   joinRoom,
   removePlayerFromAllRooms,
   setCharacter,
+  startWhoamiGame,
   startWweGame,
-  submitVote,
+  submitWweVote,
   toPublicState,
+  whoamiAsk,
+  whoamiAssignName,
+  whoamiConfirmGuess,
+  whoamiContinue,
+  whoamiGuess,
+  whoamiVote,
 } from "./rooms.js";
 import type { ClientToServerEvents, ServerToClientEvents } from "./types.js";
 
@@ -29,13 +36,21 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
 });
 
 // Player identity is a stable client-generated id (survives reconnects), not the
-// ephemeral socket.id. This map resolves the socket handling an event back to it.
+// ephemeral socket.id. These maps translate between the two in both directions.
 const socketToClient = new Map<string, string>();
+const clientToSocket = new Map<string, string>();
 
+// Some games (whoami) show different players different things — who's allowed to
+// see a given identity depends on the viewer — so state can't be a single room-wide
+// broadcast. Every recipient gets their own personalized snapshot instead.
 function broadcastRoom(code: string) {
   const room = getRoom(code);
   if (!room) return;
-  io.to(room.code).emit("room:state", toPublicState(room));
+  for (const player of room.players.values()) {
+    const socketId = clientToSocket.get(player.id);
+    if (!socketId) continue;
+    io.to(socketId).emit("room:state", toPublicState(room, player.id));
+  }
 }
 
 function cleanName(raw: string): string {
@@ -58,8 +73,9 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
 
     const room = createRoom(clientId, name);
     socketToClient.set(socket.id, clientId);
+    clientToSocket.set(clientId, socket.id);
     socket.join(room.code);
-    ack({ ok: true, state: toPublicState(room) });
+    ack({ ok: true, state: toPublicState(room, clientId) });
   });
 
   socket.on("room:join", (payload, ack) => {
@@ -88,18 +104,33 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
       return;
     }
     socketToClient.set(socket.id, clientId);
+    clientToSocket.set(clientId, socket.id);
     socket.join(room.code);
-    ack({ ok: true, state: toPublicState(room) });
+    ack({ ok: true, state: toPublicState(room, clientId) });
     broadcastRoom(room.code);
   });
 
-  socket.on("game:start", (payload) => {
+  socket.on("game:start", (payload, ack) => {
     const clientId = socketToClient.get(socket.id);
     const room = clientId ? findRoomByPlayer(clientId) : undefined;
-    if (!room || room.hostId !== clientId) return;
+    if (!room || room.hostId !== clientId) {
+      ack({ ok: false, error: "Nur der Host kann ein Spiel starten." });
+      return;
+    }
     if (payload?.gameId === "wwe") {
       startWweGame(room);
+      ack({ ok: true });
       broadcastRoom(room.code);
+    } else if (payload?.gameId === "whoami") {
+      const started = startWhoamiGame(room);
+      if (started) {
+        ack({ ok: true });
+        broadcastRoom(room.code);
+      } else {
+        ack({ ok: false, error: "Mindestens 2 Spieler nötig." });
+      }
+    } else {
+      ack({ ok: false, error: "Unbekanntes Spiel." });
     }
   });
 
@@ -125,8 +156,59 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     const clientId = socketToClient.get(socket.id);
     const room = clientId ? findRoomByPlayer(clientId) : undefined;
     if (!room || !clientId) return;
-    const ok = submitVote(room, clientId, payload?.targetPlayerId ?? "");
+    const ok = submitWweVote(room, clientId, payload?.targetPlayerId ?? "");
     if (ok) broadcastRoom(room.code);
+  });
+
+  socket.on("whoami:assignName", (payload, ack) => {
+    const clientId = socketToClient.get(socket.id);
+    const room = clientId ? findRoomByPlayer(clientId) : undefined;
+    if (!room || !clientId) {
+      ack({ ok: false, error: "Nicht in einem Raum." });
+      return;
+    }
+    const ok = whoamiAssignName(room, clientId, payload?.name ?? "");
+    if (ok) {
+      ack({ ok: true });
+      broadcastRoom(room.code);
+    } else {
+      ack({ ok: false, error: "Name konnte nicht gesetzt werden." });
+    }
+  });
+
+  socket.on("whoami:ask", (payload) => {
+    const clientId = socketToClient.get(socket.id);
+    const room = clientId ? findRoomByPlayer(clientId) : undefined;
+    if (!room || !clientId) return;
+    if (whoamiAsk(room, clientId, payload?.question ?? "")) broadcastRoom(room.code);
+  });
+
+  socket.on("whoami:vote", (payload) => {
+    const clientId = socketToClient.get(socket.id);
+    const room = clientId ? findRoomByPlayer(clientId) : undefined;
+    if (!room || !clientId) return;
+    if (whoamiVote(room, clientId, !!payload?.answer)) broadcastRoom(room.code);
+  });
+
+  socket.on("whoami:continue", () => {
+    const clientId = socketToClient.get(socket.id);
+    const room = clientId ? findRoomByPlayer(clientId) : undefined;
+    if (!room || !clientId) return;
+    if (whoamiContinue(room, clientId)) broadcastRoom(room.code);
+  });
+
+  socket.on("whoami:guess", (payload) => {
+    const clientId = socketToClient.get(socket.id);
+    const room = clientId ? findRoomByPlayer(clientId) : undefined;
+    if (!room || !clientId) return;
+    if (whoamiGuess(room, clientId, payload?.guess ?? "")) broadcastRoom(room.code);
+  });
+
+  socket.on("whoami:confirmGuess", (payload) => {
+    const clientId = socketToClient.get(socket.id);
+    const room = clientId ? findRoomByPlayer(clientId) : undefined;
+    if (!room || !clientId) return;
+    if (whoamiConfirmGuess(room, clientId, !!payload?.correct)) broadcastRoom(room.code);
   });
 
   socket.on("player:setCharacter", (payload, ack) => {
@@ -148,6 +230,11 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
   socket.on("disconnect", () => {
     const clientId = socketToClient.get(socket.id);
     socketToClient.delete(socket.id);
+    // Only clear the reverse mapping if it still points at this socket — a
+    // near-simultaneous reconnect may have already replaced it with a new one.
+    if (clientId && clientToSocket.get(clientId) === socket.id) {
+      clientToSocket.delete(clientId);
+    }
     if (!clientId) return;
     const room = disconnectPlayer(clientId);
     if (room) broadcastRoom(room.code);
