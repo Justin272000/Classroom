@@ -227,6 +227,7 @@ button.secondary {
   font-size: 1.1rem;
   margin-right: 6px;
   line-height: 1;
+  vertical-align: middle;
 }
 
 .player-avatar-img {
@@ -455,10 +456,8 @@ button.secondary {
 }
 
 .inline-player {
-  display: inline-flex;
-  align-items: center;
-  vertical-align: middle;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .inline-player .player-avatar-img {
