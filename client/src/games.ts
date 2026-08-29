@@ -48,7 +48,7 @@ export const GAMES: GameDef[] = [
     id: "zeitbombe",
     name: "Zeitbombe",
     cover: "/covers/zeitbombe.webp",
-    background: "/backgrounds/zeitbombe.webp",
+    background: "/backgrounds/stadtlandfluss.webp",
     lettering: "/lettering/zeitbombe.webp",
   },
 ];
