@@ -40,7 +40,6 @@ export default function GameCarousel({ isHost, onStart, error }: Props) {
 
         <div className="carousel-current">
           <img className="carousel-current-img game-cover" src={current.cover} alt={current.name} />
-          <p className="hint carousel-tagline">{current.tagline}</p>
         </div>
 
         <img className="carousel-side game-cover" src={next.cover} alt="" onClick={() => setIndex((i) => i + 1)} />
