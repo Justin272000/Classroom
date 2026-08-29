@@ -333,5 +333,5 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
 });
 
 httpServer.listen(PORT, () => {
-  console.log(`Mindgames server listening on http://localhost:${PORT}`);
+  console.log(`Classroom server listening on http://localhost:${PORT}`);
 });
