@@ -22,6 +22,15 @@ import {
   type InternalWhoamiGame,
 } from "./games/whoami.js";
 import { pickQuestion as pickWweQuestion } from "./games/wwe.js";
+import {
+  challengeThreshold as zeitbombeChallengeThreshold,
+  resolveAnswerTimeout as resolveZeitbombeAnswerTimeout,
+  resolveChallengeWindow as resolveZeitbombeChallengeWindow,
+  startZeitbombe,
+  submitAnswer as submitZeitbombeAnswerInternal,
+  submitChallenge as submitZeitbombeChallengeInternal,
+  type InternalZeitbombeGame,
+} from "./games/zeitbombe.js";
 import type {
   CancelCultureGameState,
   GuessItGameState,
@@ -30,6 +39,7 @@ import type {
   StadtLandFlussGameState,
   WhoamiGameState,
   WweGameState,
+  ZeitbombeGameState,
 } from "./types.js";
 
 /** Players have this long to answer a wwe question or cancelculture statement
@@ -63,7 +73,8 @@ type InternalGame =
   | InternalWhoamiGame
   | InternalGuessItGame
   | InternalCancelCultureGame
-  | InternalSlfGame;
+  | InternalSlfGame
+  | InternalZeitbombeGame;
 
 interface Room {
   code: string;
@@ -80,6 +91,7 @@ interface Room {
   guessitAskedQuestions: Set<string>;
   cancelcultureAskedStatements: Set<string>;
   slfUsedCategories: Set<string>;
+  zeitbombeUsedCategories: Set<string>;
 }
 
 const rooms = new Map<string, Room>();
@@ -120,6 +132,7 @@ export function createRoom(hostId: string, hostName: string): Room {
     guessitAskedQuestions: new Set(),
     cancelcultureAskedStatements: new Set(),
     slfUsedCategories: new Set(),
+    zeitbombeUsedCategories: new Set(),
   };
   rooms.set(code, room);
   return room;
@@ -337,6 +350,40 @@ export function slfNext(room: Room, playerId: string): boolean {
   return nextSlfRound(room.game);
 }
 
+export function startZeitbombeGame(room: Room): boolean {
+  const connectedIds = [...room.players.values()].filter((p) => p.connected).map((p) => p.id);
+  const game = startZeitbombe(connectedIds, room.zeitbombeUsedCategories);
+  if (!game) return false;
+  room.game = game;
+  room.phase = "playing";
+  return true;
+}
+
+export function submitZeitbombeAnswer(room: Room, playerId: string, text: string): boolean {
+  if (room.phase !== "playing" || room.game?.id !== "zeitbombe") return false;
+  const ok = submitZeitbombeAnswerInternal(room.game, playerId, text);
+  if (ok && room.game.stage === "finished") room.phase = "results";
+  return ok;
+}
+
+export function submitZeitbombeChallenge(room: Room, playerId: string): boolean {
+  if (room.phase !== "playing" || room.game?.id !== "zeitbombe") return false;
+  return submitZeitbombeChallengeInternal(room.game, playerId);
+}
+
+/** Called when the current answering/challenge window's timer expires. Resolves
+ * whichever phase the game is currently in. No-ops if the round already ended
+ * some other way by the time it fires. */
+export function resolveZeitbombeTimeout(room: Room): boolean {
+  if (room.phase !== "playing" || room.game?.id !== "zeitbombe") return false;
+  const resolved =
+    room.game.stage === "answering"
+      ? resolveZeitbombeAnswerTimeout(room.game)
+      : resolveZeitbombeChallengeWindow(room.game, room.players);
+  if (resolved && room.game.stage === "finished") room.phase = "results";
+  return resolved;
+}
+
 /** Called when a round's answer-timer expires. Reveals results with whatever
  * votes came in, same as if everyone had answered. No-ops if the round already
  * ended some other way (all voted, host advanced, game ended) by the time it fires. */
@@ -359,6 +406,7 @@ export function toPublicState(room: Room, forPlayerId: string): RoomState {
     | GuessItGameState
     | CancelCultureGameState
     | StadtLandFlussGameState
+    | ZeitbombeGameState
     | null = null;
 
   if (room.game?.id === "wwe") {
@@ -441,6 +489,21 @@ export function toPublicState(room: Room, forPlayerId: string): RoomState {
       submittedPlayerIds: [...g.words.keys()],
       lastRoundEntries: g.lastRoundEntries,
       scores,
+    };
+  } else if (room.game?.id === "zeitbombe") {
+    const g = room.game;
+    game = {
+      id: "zeitbombe",
+      category: g.category,
+      stage: g.stage,
+      turnPlayerId: g.stage === "answering" ? (g.turnOrder[g.turnIndex] ?? null) : null,
+      history: g.history,
+      pendingAnswer: g.pendingAnswer,
+      challengedBy: g.challengedBy,
+      challengeThreshold: zeitbombeChallengeThreshold(g, room.players),
+      deadline: g.deadline,
+      loserId: g.loserId,
+      loseReason: g.loseReason,
     };
   }
 

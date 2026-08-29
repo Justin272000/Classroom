@@ -50,6 +50,14 @@ export const GAMES: GameDef[] = [
     background: "/backgrounds/stadtlandfluss.webp",
     lettering: "/lettering/stadtlandfluss.webp",
   },
+  {
+    id: "zeitbombe",
+    name: "Zeitbombe",
+    tagline: "Reihum Begriffe finden, bevor die Bombe hochgeht",
+    cover: "/covers/zeitbombe.webp",
+    background: "/backgrounds/zeitbombe.webp",
+    lettering: "/lettering/zeitbombe.webp",
+  },
 ];
 
 export function findGame(id: GameId): GameDef | undefined {

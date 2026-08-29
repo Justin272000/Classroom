@@ -12,6 +12,7 @@ import {
   getRoom,
   joinRoom,
   removePlayerFromAllRooms,
+  resolveZeitbombeTimeout,
   setCharacter,
   slfNext,
   slfSubmitWord,
@@ -20,9 +21,12 @@ import {
   startSlfGame,
   startWhoamiGame,
   startWweGame,
+  startZeitbombeGame,
   submitCancelCultureVote,
   submitGuessItGuess,
   submitWweVote,
+  submitZeitbombeAnswer,
+  submitZeitbombeChallenge,
   toPublicState,
   whoamiAsk,
   whoamiAssignName,
@@ -32,6 +36,7 @@ import {
   whoamiVote,
   type Room,
 } from "./rooms.js";
+import { ZEITBOMBE_ANSWER_MS, ZEITBOMBE_CHALLENGE_MS } from "./games/zeitbombe.js";
 import type { ClientToServerEvents, ServerToClientEvents } from "./types.js";
 
 const PORT = Number(process.env.PORT ?? 4000);
@@ -82,13 +87,27 @@ function clearRoundTimer(code: string) {
 
 function scheduleRoundTimer(room: Room) {
   clearRoundTimer(room.code);
-  if (room.game?.id !== "wwe" && room.game?.id !== "cancelculture") return;
-  const timer = setTimeout(() => {
-    roundTimers.delete(room.code);
-    const current = getRoom(room.code);
-    if (current && forceRevealTimedOut(current)) broadcastRoom(current.code);
-  }, ANSWER_TIME_MS);
-  roundTimers.set(room.code, timer);
+  if (room.game?.id === "wwe" || room.game?.id === "cancelculture") {
+    const timer = setTimeout(() => {
+      roundTimers.delete(room.code);
+      const current = getRoom(room.code);
+      if (current && forceRevealTimedOut(current)) broadcastRoom(current.code);
+    }, ANSWER_TIME_MS);
+    roundTimers.set(room.code, timer);
+  } else if (room.game?.id === "zeitbombe" && room.game.stage !== "finished") {
+    // Alternates between a 10s answering window and a 3s challenge window.
+    // Each time this timer fires and the round is still going (bomb passed on
+    // rather than exploding), it reschedules itself for the next window.
+    const durationMs = room.game.stage === "answering" ? ZEITBOMBE_ANSWER_MS : ZEITBOMBE_CHALLENGE_MS;
+    const timer = setTimeout(() => {
+      roundTimers.delete(room.code);
+      const current = getRoom(room.code);
+      if (!current || !resolveZeitbombeTimeout(current)) return;
+      broadcastRoom(current.code);
+      scheduleRoundTimer(current);
+    }, durationMs);
+    roundTimers.set(room.code, timer);
+  }
 }
 
 io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>) => {
@@ -181,6 +200,15 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
       } else {
         ack({ ok: false, error: "Mindestens 2 Spieler nötig." });
       }
+    } else if (payload?.gameId === "zeitbombe") {
+      const started = startZeitbombeGame(room);
+      if (started) {
+        scheduleRoundTimer(room);
+        ack({ ok: true });
+        broadcastRoom(room.code);
+      } else {
+        ack({ ok: false, error: "Mindestens 2 Spieler nötig." });
+      }
     } else {
       ack({ ok: false, error: "Unbekanntes Spiel." });
     }
@@ -203,6 +231,11 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
       broadcastRoom(room.code);
     } else if (room.game?.id === "stadtlandfluss") {
       if (slfNext(room, clientId)) broadcastRoom(room.code);
+    } else if (room.game?.id === "zeitbombe") {
+      if (startZeitbombeGame(room)) {
+        scheduleRoundTimer(room);
+        broadcastRoom(room.code);
+      }
     }
   });
 
@@ -300,6 +333,23 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     const room = clientId ? findRoomByPlayer(clientId) : undefined;
     if (!room || !clientId) return;
     if (slfSubmitWord(room, clientId, payload?.word ?? "")) broadcastRoom(room.code);
+  });
+
+  socket.on("zeitbombe:submit", (payload) => {
+    const clientId = socketToClient.get(socket.id);
+    const room = clientId ? findRoomByPlayer(clientId) : undefined;
+    if (!room || !clientId) return;
+    if (submitZeitbombeAnswer(room, clientId, payload?.text ?? "")) {
+      scheduleRoundTimer(room);
+      broadcastRoom(room.code);
+    }
+  });
+
+  socket.on("zeitbombe:challenge", () => {
+    const clientId = socketToClient.get(socket.id);
+    const room = clientId ? findRoomByPlayer(clientId) : undefined;
+    if (!room || !clientId) return;
+    if (submitZeitbombeChallenge(room, clientId)) broadcastRoom(room.code);
   });
 
   socket.on("player:setCharacter", (payload, ack) => {

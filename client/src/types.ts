@@ -7,7 +7,7 @@ export interface Player {
 
 export type RoomPhase = "lobby" | "playing" | "results";
 
-export type GameId = "wwe" | "whoami" | "guessit" | "cancelculture" | "stadtlandfluss";
+export type GameId = "wwe" | "whoami" | "guessit" | "cancelculture" | "stadtlandfluss" | "zeitbombe";
 
 export interface WweGameState {
   id: "wwe";
@@ -76,6 +76,28 @@ export interface StadtLandFlussGameState {
   scores: { playerId: string; name: string; total: number }[];
 }
 
+export type ZeitbombeStage = "answering" | "challenge" | "finished";
+export type ZeitbombeLoseReason = "timeout" | "exploded" | "duplicate";
+
+export interface ZeitbombeHistoryEntry {
+  playerId: string;
+  text: string;
+}
+
+export interface ZeitbombeGameState {
+  id: "zeitbombe";
+  category: string;
+  stage: ZeitbombeStage;
+  turnPlayerId: string | null;
+  history: ZeitbombeHistoryEntry[];
+  pendingAnswer: ZeitbombeHistoryEntry | null;
+  challengedBy: string[];
+  challengeThreshold: number;
+  deadline: number;
+  loserId: string | null;
+  loseReason: ZeitbombeLoseReason | null;
+}
+
 export interface RoomState {
   code: string;
   hostId: string;
@@ -87,6 +109,7 @@ export interface RoomState {
     | GuessItGameState
     | CancelCultureGameState
     | StadtLandFlussGameState
+    | ZeitbombeGameState
     | null;
 }
 
@@ -118,6 +141,8 @@ export interface ClientToServerEvents {
   "guessit:submit": (payload: { guess: number }) => void;
   "cancelculture:vote": (payload: { answer: boolean }) => void;
   "stadtlandfluss:submitWord": (payload: { word: string }) => void;
+  "zeitbombe:submit": (payload: { text: string }) => void;
+  "zeitbombe:challenge": () => void;
   "player:setCharacter": (
     payload: { character: string },
     ack: (res: { ok: true } | { ok: false; error: string }) => void
