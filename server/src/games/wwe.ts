@@ -547,7 +547,12 @@ const QUESTIONS = [
 ];
 
 export function pickQuestion(exclude: Set<string> = new Set()): string {
-  const pool = QUESTIONS.filter((q) => !exclude.has(q));
-  const list = pool.length > 0 ? pool : QUESTIONS;
-  return list[Math.floor(Math.random() * list.length)];
+  let pool = QUESTIONS.filter((q) => !exclude.has(q));
+  if (pool.length === 0) {
+    // Whole pool used up — start a fresh no-repeat cycle instead of falling
+    // back to picking from the unfiltered list forever.
+    exclude.clear();
+    pool = QUESTIONS;
+  }
+  return pool[Math.floor(Math.random() * pool.length)];
 }

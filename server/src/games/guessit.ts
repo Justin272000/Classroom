@@ -565,7 +565,10 @@ const QUESTIONS: GuessItQuestion[] = [
 ];
 
 export function pickQuestion(exclude: Set<string> = new Set()): GuessItQuestion {
-  const pool = QUESTIONS.filter((q) => !exclude.has(q.question));
-  const list = pool.length > 0 ? pool : QUESTIONS;
-  return list[Math.floor(Math.random() * list.length)];
+  let pool = QUESTIONS.filter((q) => !exclude.has(q.question));
+  if (pool.length === 0) {
+    exclude.clear();
+    pool = QUESTIONS;
+  }
+  return pool[Math.floor(Math.random() * pool.length)];
 }

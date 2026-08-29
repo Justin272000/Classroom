@@ -533,7 +533,10 @@ const STATEMENTS = [
 ];
 
 export function pickStatement(exclude: Set<string> = new Set()): string {
-  const pool = STATEMENTS.filter((s) => !exclude.has(s));
-  const list = pool.length > 0 ? pool : STATEMENTS;
-  return list[Math.floor(Math.random() * list.length)];
+  let pool = STATEMENTS.filter((s) => !exclude.has(s));
+  if (pool.length === 0) {
+    exclude.clear();
+    pool = STATEMENTS;
+  }
+  return pool[Math.floor(Math.random() * pool.length)];
 }

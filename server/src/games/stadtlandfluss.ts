@@ -679,9 +679,12 @@ const CATEGORIES = [
 ];
 
 export function pickCategory(exclude: Set<string> = new Set()): string {
-  const pool = CATEGORIES.filter((c) => !exclude.has(c));
-  const list = pool.length > 0 ? pool : CATEGORIES;
-  return list[Math.floor(Math.random() * list.length)];
+  let pool = CATEGORIES.filter((c) => !exclude.has(c));
+  if (pool.length === 0) {
+    exclude.clear();
+    pool = CATEGORIES;
+  }
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 export type SlfStage = "writing" | "results" | "finished";
@@ -698,9 +701,14 @@ export interface InternalSlfGame {
   lastRoundEntries: { playerId: string; word: string | null; points: number }[] | null;
 }
 
-export function startStadtLandFluss(connectedPlayerIds: string[]): InternalSlfGame | null {
+/** `usedCategories` is owned by the caller (the room) and mutated in place, so
+ * categories already seen in earlier playthroughs in this room stay excluded
+ * here too — not just within this one 10-round game. */
+export function startStadtLandFluss(
+  connectedPlayerIds: string[],
+  usedCategories: Set<string>
+): InternalSlfGame | null {
   if (connectedPlayerIds.length < 2) return null;
-  const usedCategories = new Set<string>();
   const category = pickCategory(usedCategories);
   usedCategories.add(category);
   return {

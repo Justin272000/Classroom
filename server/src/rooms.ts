@@ -39,7 +39,6 @@ export const ANSWER_TIME_MS = 10_000;
 interface InternalWweGame {
   id: "wwe";
   question: string;
-  askedQuestions: Set<string>;
   votes: Map<string, string>; // voterId -> targetPlayerId
   deadline: number;
 }
@@ -49,14 +48,12 @@ interface InternalGuessItGame {
   question: string;
   answer: number;
   unit: string;
-  askedQuestions: Set<string>;
   guesses: Map<string, number>;
 }
 
 interface InternalCancelCultureGame {
   id: "cancelculture";
   statement: string;
-  askedStatements: Set<string>;
   votes: Map<string, boolean>;
   deadline: number;
 }
@@ -74,6 +71,15 @@ interface Room {
   players: Map<string, Player>;
   phase: "lobby" | "playing" | "results";
   game: InternalGame | null;
+  // Tracks which questions/statements/categories this room has already seen, across
+  // however many times a game has been started — not just within one continuous
+  // playthrough — so replaying a game doesn't immediately cycle back through
+  // recently-seen ones. Each pick function clears its set and starts a fresh cycle
+  // once the whole pool has been exhausted.
+  wweAskedQuestions: Set<string>;
+  guessitAskedQuestions: Set<string>;
+  cancelcultureAskedStatements: Set<string>;
+  slfUsedCategories: Set<string>;
 }
 
 const rooms = new Map<string, Room>();
@@ -110,6 +116,10 @@ export function createRoom(hostId: string, hostName: string): Room {
     players: new Map([[hostId, { id: hostId, name: hostName, connected: true, character: null }]]),
     phase: "lobby",
     game: null,
+    wweAskedQuestions: new Set(),
+    guessitAskedQuestions: new Set(),
+    cancelcultureAskedStatements: new Set(),
+    slfUsedCategories: new Set(),
   };
   rooms.set(code, room);
   return room;
@@ -197,10 +207,9 @@ export function disconnectPlayer(playerId: string): Room | undefined {
 }
 
 export function startWweGame(room: Room): void {
-  const askedQuestions = room.game?.id === "wwe" ? room.game.askedQuestions : new Set<string>();
-  const question = pickWweQuestion(askedQuestions);
-  askedQuestions.add(question);
-  room.game = { id: "wwe", question, askedQuestions, votes: new Map(), deadline: Date.now() + ANSWER_TIME_MS };
+  const question = pickWweQuestion(room.wweAskedQuestions);
+  room.wweAskedQuestions.add(question);
+  room.game = { id: "wwe", question, votes: new Map(), deadline: Date.now() + ANSWER_TIME_MS };
   room.phase = "playing";
 }
 
@@ -259,10 +268,9 @@ export function whoamiConfirmGuess(room: Room, playerId: string, correct: boolea
 }
 
 export function startGuessItGame(room: Room): void {
-  const askedQuestions = room.game?.id === "guessit" ? room.game.askedQuestions : new Set<string>();
-  const q = pickGuessItQuestion(askedQuestions);
-  askedQuestions.add(q.question);
-  room.game = { id: "guessit", question: q.question, answer: q.answer, unit: q.unit, askedQuestions, guesses: new Map() };
+  const q = pickGuessItQuestion(room.guessitAskedQuestions);
+  room.guessitAskedQuestions.add(q.question);
+  room.game = { id: "guessit", question: q.question, answer: q.answer, unit: q.unit, guesses: new Map() };
   room.phase = "playing";
 }
 
@@ -280,13 +288,11 @@ export function submitGuessItGuess(room: Room, playerId: string, guess: number):
 }
 
 export function startCancelCultureGame(room: Room): void {
-  const askedStatements = room.game?.id === "cancelculture" ? room.game.askedStatements : new Set<string>();
-  const statement = pickStatement(askedStatements);
-  askedStatements.add(statement);
+  const statement = pickStatement(room.cancelcultureAskedStatements);
+  room.cancelcultureAskedStatements.add(statement);
   room.game = {
     id: "cancelculture",
     statement,
-    askedStatements,
     votes: new Map(),
     deadline: Date.now() + ANSWER_TIME_MS,
   };
@@ -307,7 +313,7 @@ export function submitCancelCultureVote(room: Room, playerId: string, answer: bo
 
 export function startSlfGame(room: Room): boolean {
   const connectedIds = [...room.players.values()].filter((p) => p.connected).map((p) => p.id);
-  const game = startStadtLandFluss(connectedIds);
+  const game = startStadtLandFluss(connectedIds, room.slfUsedCategories);
   if (!game) return false;
   room.game = game;
   room.phase = "playing";
