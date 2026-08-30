@@ -1,6 +1,10 @@
 import { pickCategory } from "./stadtlandfluss.js";
 import type { Player } from "../types.js";
 
+/** Both the writing and assigning phases of a round get this long before the
+ * server force-advances with whatever was submitted so far. */
+export const KDF_ROUND_TIME_MS = 10_000;
+
 export type KdfStage = "writing" | "assigning" | "results" | "finished";
 
 export interface KdfRoundEntry {
@@ -31,6 +35,8 @@ export interface InternalKdfGame {
   assignments: Map<string, Map<string, string>>;
   lastRoundResults: Map<string, KdfRoundResult> | null;
   scores: Map<string, number>;
+  /** epoch ms when the current writing or assigning window closes */
+  deadline: number;
 }
 
 /** Needs at least 3 players — with only 2, the "assignment" is a single term
@@ -53,6 +59,7 @@ export function startKennedeineFreunde(
     assignments: new Map(),
     lastRoundResults: null,
     scores: new Map(connectedPlayerIds.map((id) => [id, 0])),
+    deadline: Date.now() + KDF_ROUND_TIME_MS,
   };
 }
 
@@ -69,9 +76,14 @@ export function allConnectedSubmittedWords(game: InternalKdfGame, players: Map<s
   return connectedIds.length > 0 && connectedIds.every((id) => game.words.has(id));
 }
 
-/** Moves from "writing" to "assigning" once everyone has submitted a word. */
-export function beginAssigning(game: InternalKdfGame): void {
+/** Moves from "writing" to "assigning" — once everyone has submitted a word,
+ * or the writing timer ran out with however many words came in. Guarded so a
+ * race between those two triggers can't fire this twice. */
+export function beginAssigning(game: InternalKdfGame): boolean {
+  if (game.stage !== "writing") return false;
   game.stage = "assigning";
+  game.deadline = Date.now() + KDF_ROUND_TIME_MS;
+  return true;
 }
 
 /** `assignment` maps targetPlayerId -> termOwnerId: for the tile belonging to
@@ -113,8 +125,11 @@ export function allConnectedSubmittedAssignments(game: InternalKdfGame, players:
 /** Scores the just-finished round for every player (10 pts per correct
  * guess, +5 bonus for a perfect round), adds it to cumulative totals, and
  * moves the game into "results". Call once allConnectedSubmittedAssignments
- * is true. */
-export function revealRound(game: InternalKdfGame, players: Map<string, Player>): void {
+ * is true, or the assigning timer ran out — anyone who never confirmed a
+ * guess simply has no result this round (handled client-side). Guarded so a
+ * race between those two triggers can't fire this twice. */
+export function revealRound(game: InternalKdfGame, players: Map<string, Player>): boolean {
+  if (game.stage !== "assigning") return false;
   const connectedIds = [...players.values()].filter((p) => p.connected).map((p) => p.id);
   const results = new Map<string, KdfRoundResult>();
 
@@ -135,6 +150,7 @@ export function revealRound(game: InternalKdfGame, players: Map<string, Player>)
 
   game.lastRoundResults = results;
   game.stage = "results";
+  return true;
 }
 
 /** Host-triggered: advances from a round's results to the next round, or to
@@ -153,5 +169,6 @@ export function nextRound(game: InternalKdfGame): boolean {
   game.assignments = new Map();
   game.lastRoundResults = null;
   game.stage = "writing";
+  game.deadline = Date.now() + KDF_ROUND_TIME_MS;
   return true;
 }

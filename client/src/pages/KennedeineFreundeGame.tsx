@@ -3,6 +3,7 @@ import AnimatedLeaderboard from "../components/AnimatedLeaderboard";
 import Avatar from "../components/Avatar";
 import BigPlayerTile from "../components/BigPlayerTile";
 import Lettering from "../components/Lettering";
+import RoundTimer from "../components/RoundTimer";
 import { findGame } from "../games";
 import { useLeaderboardTransition } from "../hooks/useLeaderboardTransition";
 import { pageBackgroundStyle } from "../pageBackground";
@@ -173,7 +174,7 @@ export default function KennedeineFreundeGame({ room, myId, isHost }: Props) {
 
   if (transition) {
     return (
-      <div className="page centered" style={pageBackgroundStyle(GAME.background)}>
+      <div className="page centered" style={pageBackgroundStyle(GAME.background, GAME.backgroundColor)}>
         <Lettering src={GAME.lettering} alt={GAME.name} />
         <AnimatedLeaderboard transition={transition} flipped={flipped} findPlayer={(id) => findPlayer(room, id)} />
       </div>
@@ -181,7 +182,7 @@ export default function KennedeineFreundeGame({ room, myId, isHost }: Props) {
   }
 
   return (
-    <div className="page centered" style={pageBackgroundStyle(GAME.background)}>
+    <div className="page centered" style={pageBackgroundStyle(GAME.background, GAME.backgroundColor)}>
       <Lettering src={GAME.lettering} alt={GAME.name} />
 
       {game.stage !== "finished" && (
@@ -193,6 +194,7 @@ export default function KennedeineFreundeGame({ room, myId, isHost }: Props) {
       {game.stage === "writing" && (
         <>
           <div className="slf-category">{game.category}</div>
+          <RoundTimer deadline={game.deadline} />
           <div className="card centered-content">
             {hasSubmittedWord ? (
               <p className="hint">
@@ -221,6 +223,7 @@ export default function KennedeineFreundeGame({ room, myId, isHost }: Props) {
       {game.stage === "assigning" && (
         <>
           <div className="slf-category">{game.category}</div>
+          <RoundTimer deadline={game.deadline} />
           {hasConfirmedAssignment ? (
             <div className="card centered-content">
               <p className="hint">
@@ -267,26 +270,30 @@ export default function KennedeineFreundeGame({ room, myId, isHost }: Props) {
         </>
       )}
 
-      {game.stage === "results" && game.myResult && (
+      {game.stage === "results" && (
         <>
           <div className="slf-category">{game.category}</div>
-          <div className="big-tile-grid kdf-results-grid">
-            {game.myResult.entries.map((entry) => {
-              const target = findPlayer(room, entry.targetPlayerId);
-              const text = game.revealedWords.find((w) => w.playerId === entry.termOwnerId)?.text ?? "";
-              return (
-                <BigPlayerTile
-                  key={entry.targetPlayerId}
-                  player={target}
-                  value={text}
-                  highlight={entry.correct}
-                  gold={game.myResult!.allCorrect}
-                  badge={entry.correct ? "+10" : undefined}
-                  badgeVariant="positive"
-                />
-              );
-            })}
-          </div>
+          {game.myResult ? (
+            <div className="big-tile-grid kdf-results-grid">
+              {game.myResult.entries.map((entry) => {
+                const target = findPlayer(room, entry.targetPlayerId);
+                const text = game.revealedWords.find((w) => w.playerId === entry.termOwnerId)?.text ?? "";
+                return (
+                  <BigPlayerTile
+                    key={entry.targetPlayerId}
+                    player={target}
+                    value={text}
+                    highlight={entry.correct}
+                    gold={game.myResult!.allCorrect}
+                    badge={entry.correct ? "+10" : undefined}
+                    badgeVariant="positive"
+                  />
+                );
+              })}
+            </div>
+          ) : (
+            <p className="hint">Du hast diese Runde nicht rechtzeitig zugeordnet.</p>
+          )}
           {showBonusPopup && <div className="kdf-bonus-popup">+5 Bonus — alles richtig!</div>}
           <div className="card centered-content">
             {isHost ? (

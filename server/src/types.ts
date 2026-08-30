@@ -152,6 +152,8 @@ export interface KennedeineFreundeGameState {
   /** true word authorship, revealed once results are in — present during "results"/"finished" */
   revealedWords: { playerId: string; text: string }[];
   scores: { playerId: string; name: string; total: number }[];
+  /** epoch ms when the current writing or assigning window closes */
+  deadline: number;
 }
 
 export interface RoomState {

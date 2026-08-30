@@ -12,6 +12,7 @@ import {
   getRoom,
   joinRoom,
   kdfNext,
+  kdfResolveTimeout,
   kdfSubmitAssignment,
   kdfSubmitWord,
   removePlayerFromAllRooms,
@@ -40,6 +41,7 @@ import {
   whoamiVote,
   type Room,
 } from "./rooms.js";
+import { KDF_ROUND_TIME_MS } from "./games/kennedeinefreunde.js";
 import { ZEITBOMBE_ANSWER_MS, ZEITBOMBE_CHALLENGE_MS } from "./games/zeitbombe.js";
 import type { ClientToServerEvents, ServerToClientEvents } from "./types.js";
 
@@ -110,6 +112,21 @@ function scheduleRoundTimer(room: Room) {
       broadcastRoom(current.code);
       scheduleRoundTimer(current);
     }, durationMs);
+    roundTimers.set(room.code, timer);
+  } else if (
+    room.game?.id === "kennedeinefreunde" &&
+    (room.game.stage === "writing" || room.game.stage === "assigning")
+  ) {
+    // Same 10s window for both the writing and assigning phases. Each time
+    // this fires and the round is still going (writing -> assigning), it
+    // reschedules itself for the next window.
+    const timer = setTimeout(() => {
+      roundTimers.delete(room.code);
+      const current = getRoom(room.code);
+      if (!current || !kdfResolveTimeout(current)) return;
+      broadcastRoom(current.code);
+      scheduleRoundTimer(current);
+    }, KDF_ROUND_TIME_MS);
     roundTimers.set(room.code, timer);
   }
 }
@@ -216,6 +233,7 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     } else if (payload?.gameId === "kennedeinefreunde") {
       const started = startKdfGame(room);
       if (started) {
+        scheduleRoundTimer(room);
         ack({ ok: true });
         broadcastRoom(room.code);
       } else {
@@ -249,7 +267,10 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
         broadcastRoom(room.code);
       }
     } else if (room.game?.id === "kennedeinefreunde") {
-      if (kdfNext(room, clientId)) broadcastRoom(room.code);
+      if (kdfNext(room, clientId)) {
+        scheduleRoundTimer(room);
+        broadcastRoom(room.code);
+      }
     }
   });
 
@@ -370,7 +391,15 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     const clientId = socketToClient.get(socket.id);
     const room = clientId ? findRoomByPlayer(clientId) : undefined;
     if (!room || !clientId) return;
-    if (kdfSubmitWord(room, clientId, payload?.word ?? "")) broadcastRoom(room.code);
+    if (kdfSubmitWord(room, clientId, payload?.word ?? "")) {
+      // Only reschedule if this specific submission was the one that moved
+      // the round from writing to assigning — an in-between submission
+      // (not everyone in yet) must not reset the writing timer.
+      if (room.game?.id === "kennedeinefreunde" && room.game.stage === "assigning") {
+        scheduleRoundTimer(room);
+      }
+      broadcastRoom(room.code);
+    }
   });
 
   socket.on("kennedeinefreunde:submitAssignment", (payload) => {
@@ -378,7 +407,12 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     const room = clientId ? findRoomByPlayer(clientId) : undefined;
     if (!room || !clientId) return;
     const assignment = new Map(Object.entries(payload?.assignment ?? {}));
-    if (kdfSubmitAssignment(room, clientId, assignment)) broadcastRoom(room.code);
+    if (kdfSubmitAssignment(room, clientId, assignment)) {
+      if (room.game?.id === "kennedeinefreunde" && room.game.stage === "results") {
+        clearRoundTimer(room.code);
+      }
+      broadcastRoom(room.code);
+    }
   });
 
   socket.on("player:setCharacter", (payload, ack) => {

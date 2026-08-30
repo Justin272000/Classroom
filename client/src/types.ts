@@ -137,6 +137,7 @@ export interface KennedeineFreundeGameState {
   myResult: KdfRoundResult | null;
   revealedWords: { playerId: string; text: string }[];
   scores: { playerId: string; name: string; total: number }[];
+  deadline: number;
 }
 
 export interface RoomState {

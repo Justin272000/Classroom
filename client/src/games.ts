@@ -7,6 +7,9 @@ export interface GameDef {
   /** optional — a game without dedicated background art yet just falls back
    * to the page's plain default styling (see pageBackgroundStyle). */
   background?: string;
+  /** optional — used instead of a plain fallback when there's no background
+   * image, e.g. a color sampled from the game's cover art. */
+  backgroundColor?: string;
   lettering: string;
 }
 
@@ -57,7 +60,9 @@ export const GAMES: GameDef[] = [
     id: "kennedeinefreunde",
     name: "Kenne deine Freunde",
     cover: "/covers/kenne-deine-freunde.webp",
-    // no dedicated background art yet — falls back to the plain page style
+    // no dedicated background art yet — a dark warm glow sampled from the
+    // cover art's orange sunburst stands in for one instead
+    backgroundColor: "#65330c",
     lettering: "/lettering/kennedeinefreunde.webp",
   },
 ];

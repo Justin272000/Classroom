@@ -401,6 +401,16 @@ export function kdfNext(room: Room, playerId: string): boolean {
   return kdfNextRound(room.game);
 }
 
+/** Called when the current writing/assigning window's timer expires. Force-
+ * advances with whatever was submitted so far. No-ops if the round already
+ * moved on some other way by the time it fires. */
+export function kdfResolveTimeout(room: Room): boolean {
+  if (room.game?.id !== "kennedeinefreunde") return false;
+  if (room.game.stage === "writing") return kdfBeginAssigning(room.game);
+  if (room.game.stage === "assigning") return kdfRevealRound(room.game, room.players);
+  return false;
+}
+
 export function startZeitbombeGame(room: Room): boolean {
   const connectedIds = [...room.players.values()].filter((p) => p.connected).map((p) => p.id);
   const game = startZeitbombe(connectedIds, room.zeitbombeUsedCategories);
@@ -587,6 +597,7 @@ export function toPublicState(room: Room, forPlayerId: string): RoomState {
       myResult: g.lastRoundResults?.get(forPlayerId) ?? null,
       revealedWords,
       scores,
+      deadline: g.deadline,
     };
   }
 
