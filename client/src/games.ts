@@ -63,6 +63,13 @@ export const GAMES: GameDef[] = [
     background: "/backgrounds/whoami.webp",
     lettering: "/lettering/kennedeinefreunde.webp",
   },
+  {
+    id: "zahlen",
+    name: "Zahlen",
+    cover: "/covers/zahlen.webp",
+    background: "/backgrounds/wwe.webp",
+    lettering: "/lettering/zahlen.webp",
+  },
 ];
 
 export function findGame(id: GameId): GameDef | undefined {

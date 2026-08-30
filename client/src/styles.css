@@ -557,6 +557,25 @@ button.secondary {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 
+.zahlen-feedback-popup {
+  font-weight: 800;
+  font-size: 1.1rem;
+  padding: 10px 20px;
+  border-radius: 999px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.zahlen-feedback-popup.higher {
+  background: linear-gradient(90deg, #22c55e, #4ade80);
+  color: #0a2e1a;
+}
+
+.zahlen-feedback-popup.lower {
+  background: linear-gradient(90deg, #c0455a, #f87171);
+  color: white;
+}
+
 .results-list {
   list-style: none;
   margin: 0;

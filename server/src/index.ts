@@ -26,6 +26,7 @@ import {
   startSlfGame,
   startWhoamiGame,
   startWweGame,
+  startZahlenGame,
   startZeitbombeGame,
   submitCancelCultureVote,
   submitGuessItGuess,
@@ -39,6 +40,8 @@ import {
   whoamiContinue,
   whoamiGuess,
   whoamiVote,
+  zahlenNext,
+  zahlenSubmitGuess,
   type Room,
 } from "./rooms.js";
 import { KDF_ROUND_TIME_MS } from "./games/kennedeinefreunde.js";
@@ -239,6 +242,10 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
       } else {
         ack({ ok: false, error: "Mindestens 3 Spieler nötig." });
       }
+    } else if (payload?.gameId === "zahlen") {
+      startZahlenGame(room);
+      ack({ ok: true });
+      broadcastRoom(room.code);
     } else {
       ack({ ok: false, error: "Unbekanntes Spiel." });
     }
@@ -271,6 +278,8 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
         scheduleRoundTimer(room);
         broadcastRoom(room.code);
       }
+    } else if (room.game?.id === "zahlen") {
+      if (zahlenNext(room, clientId)) broadcastRoom(room.code);
     }
   });
 
@@ -413,6 +422,14 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
       }
       broadcastRoom(room.code);
     }
+  });
+
+  socket.on("zahlen:submitGuess", (payload) => {
+    const clientId = socketToClient.get(socket.id);
+    const room = clientId ? findRoomByPlayer(clientId) : undefined;
+    if (!room || !clientId) return;
+    const guess = Number(payload?.guess);
+    if (zahlenSubmitGuess(room, clientId, guess)) broadcastRoom(room.code);
   });
 
   socket.on("player:setCharacter", (payload, ack) => {

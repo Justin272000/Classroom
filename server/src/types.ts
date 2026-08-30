@@ -14,7 +14,8 @@ export type GameId =
   | "cancelculture"
   | "stadtlandfluss"
   | "zeitbombe"
-  | "kennedeinefreunde";
+  | "kennedeinefreunde"
+  | "zahlen";
 
 export interface WweGameState {
   id: "wwe";
@@ -156,6 +157,33 @@ export interface KennedeineFreundeGameState {
   deadline: number;
 }
 
+export type ZahlenStage = "guessing" | "results" | "finished";
+export type ZahlenFeedback = "higher" | "lower" | "correct";
+
+export interface ZahlenRoundEntry {
+  playerId: string;
+  guess: number | null;
+  closest: boolean;
+  points: number;
+}
+
+export interface ZahlenGameState {
+  id: "zahlen";
+  stage: ZahlenStage;
+  round: number;
+  totalRounds: number;
+  attempt: number;
+  totalAttempts: number;
+  submittedPlayerIds: string[];
+  /** this viewer's feedback for the attempt that just completed — present once it has */
+  myFeedback: ZahlenFeedback | null;
+  /** the secret number — only revealed during "results"/"finished" */
+  answer: number | null;
+  /** the just-finished round's guesses + points, present during "results"/"finished" */
+  lastRoundEntries: ZahlenRoundEntry[] | null;
+  scores: { playerId: string; name: string; total: number }[];
+}
+
 export interface RoomState {
   code: string;
   hostId: string;
@@ -169,6 +197,7 @@ export interface RoomState {
     | StadtLandFlussGameState
     | ZeitbombeGameState
     | KennedeineFreundeGameState
+    | ZahlenGameState
     | null;
 }
 
@@ -204,6 +233,7 @@ export interface ClientToServerEvents {
   "zeitbombe:challenge": () => void;
   "kennedeinefreunde:submitWord": (payload: { word: string }) => void;
   "kennedeinefreunde:submitAssignment": (payload: { assignment: Record<string, string> }) => void;
+  "zahlen:submitGuess": (payload: { guess: number }) => void;
   "player:setCharacter": (
     payload: { character: string },
     ack: (res: { ok: true } | { ok: false; error: string }) => void

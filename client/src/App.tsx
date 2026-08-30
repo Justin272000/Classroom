@@ -9,6 +9,7 @@ import Lobby from "./pages/Lobby";
 import StadtLandFlussGame from "./pages/StadtLandFlussGame";
 import WhoamiGame from "./pages/WhoamiGame";
 import WweGame from "./pages/WweGame";
+import ZahlenGame from "./pages/ZahlenGame";
 import ZeitbombeGame from "./pages/ZeitbombeGame";
 import { socket } from "./socket";
 import type { RoomState } from "./types";
@@ -80,6 +81,8 @@ export default function App() {
       return <ZeitbombeGame room={room} myId={clientId} isHost={isHost} />;
     case "kennedeinefreunde":
       return <KennedeineFreundeGame room={room} myId={clientId} isHost={isHost} />;
+    case "zahlen":
+      return <ZahlenGame room={room} myId={clientId} isHost={isHost} />;
     default:
       return <WweGame room={room} myId={clientId} isHost={isHost} />;
   }

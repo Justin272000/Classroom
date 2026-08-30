@@ -34,6 +34,14 @@ import {
 } from "./games/whoami.js";
 import { pickQuestion as pickWweQuestion } from "./games/wwe.js";
 import {
+  advanceAttempt as zahlenAdvanceAttempt,
+  allConnectedSubmitted as zahlenAllSubmitted,
+  nextZahlenRound,
+  startZahlen,
+  submitGuess as zahlenSubmitGuessInternal,
+  type InternalZahlenGame,
+} from "./games/zahlen.js";
+import {
   challengeThreshold as zeitbombeChallengeThreshold,
   resolveAnswerTimeout as resolveZeitbombeAnswerTimeout,
   resolveChallengeWindow as resolveZeitbombeChallengeWindow,
@@ -52,6 +60,7 @@ import type {
   StadtLandFlussGameState,
   WhoamiGameState,
   WweGameState,
+  ZahlenGameState,
   ZeitbombeGameState,
 } from "./types.js";
 
@@ -88,7 +97,8 @@ type InternalGame =
   | InternalCancelCultureGame
   | InternalSlfGame
   | InternalZeitbombeGame
-  | InternalKdfGame;
+  | InternalKdfGame
+  | InternalZahlenGame;
 
 interface Room {
   code: string;
@@ -411,6 +421,29 @@ export function kdfResolveTimeout(room: Room): boolean {
   return false;
 }
 
+export function startZahlenGame(room: Room): void {
+  const connectedIds = [...room.players.values()].filter((p) => p.connected).map((p) => p.id);
+  room.game = startZahlen(connectedIds);
+  room.phase = "playing";
+}
+
+export function zahlenSubmitGuess(room: Room, playerId: string, guess: number): boolean {
+  if (room.game?.id !== "zahlen") return false;
+  const ok = zahlenSubmitGuessInternal(room.game, playerId, guess);
+  if (ok && zahlenAllSubmitted(room.game, room.players)) {
+    zahlenAdvanceAttempt(room.game, room.players);
+  }
+  return ok;
+}
+
+/** Host-only: advances from a round's results to the next round, or to the
+ * final podium if that was the last round. */
+export function zahlenNext(room: Room, playerId: string): boolean {
+  if (room.game?.id !== "zahlen") return false;
+  if (room.hostId !== playerId) return false;
+  return nextZahlenRound(room.game);
+}
+
 export function startZeitbombeGame(room: Room): boolean {
   const connectedIds = [...room.players.values()].filter((p) => p.connected).map((p) => p.id);
   const game = startZeitbombe(connectedIds, room.zeitbombeUsedCategories);
@@ -469,6 +502,7 @@ export function toPublicState(room: Room, forPlayerId: string): RoomState {
     | StadtLandFlussGameState
     | ZeitbombeGameState
     | KennedeineFreundeGameState
+    | ZahlenGameState
     | null = null;
 
   if (room.game?.id === "wwe") {
@@ -598,6 +632,25 @@ export function toPublicState(room: Room, forPlayerId: string): RoomState {
       revealedWords,
       scores,
       deadline: g.deadline,
+    };
+  } else if (room.game?.id === "zahlen") {
+    const g = room.game;
+    const scores = [...room.players.values()]
+      .map((p) => ({ playerId: p.id, name: p.name, total: g.scores.get(p.id) ?? 0 }))
+      .sort((a, b) => b.total - a.total);
+    const revealed = g.stage === "results" || g.stage === "finished";
+    game = {
+      id: "zahlen",
+      stage: g.stage,
+      round: g.round,
+      totalRounds: g.totalRounds,
+      attempt: g.attempt,
+      totalAttempts: g.totalAttempts,
+      submittedPlayerIds: [...g.guesses.keys()],
+      myFeedback: g.lastFeedback.get(forPlayerId) ?? null,
+      answer: revealed ? g.target : null,
+      lastRoundEntries: g.lastRoundEntries,
+      scores,
     };
   }
 
