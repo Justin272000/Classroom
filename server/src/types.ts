@@ -216,6 +216,7 @@ export interface ClientToServerEvents {
   ) => void;
   "game:next": () => void;
   "game:end": () => void;
+  "room:leave": () => void;
   "wwe:vote": (payload: { targetPlayerId: string }) => void;
   "whoami:assignName": (
     payload: { name: string },

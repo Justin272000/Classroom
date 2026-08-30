@@ -58,6 +58,12 @@ export default function App() {
     setRoom(state);
   }
 
+  function leaveRoom() {
+    socket.emit("room:leave");
+    sessionRef.current = null;
+    setRoom(null);
+  }
+
   if (!room) {
     return <Home clientId={clientId} onJoined={handleJoined} background={sharedBackground} />;
   }
@@ -65,7 +71,9 @@ export default function App() {
   const isHost = room.hostId === clientId;
 
   if (room.phase === "lobby" || !room.game) {
-    return <Lobby room={room} isHost={isHost} myId={clientId} background={sharedBackground} />;
+    return (
+      <Lobby room={room} isHost={isHost} myId={clientId} background={sharedBackground} onLeave={leaveRoom} />
+    );
   }
 
   switch (room.game.id) {

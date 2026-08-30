@@ -13,9 +13,10 @@ interface Props {
   isHost: boolean;
   myId: string | undefined;
   background: string;
+  onLeave: () => void;
 }
 
-export default function Lobby({ room, isHost, myId, background }: Props) {
+export default function Lobby({ room, isHost, myId, background, onLeave }: Props) {
   const [copied, setCopied] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const joinUrl = `${window.location.origin}/?code=${room.code}`;
@@ -95,6 +96,12 @@ export default function Lobby({ room, isHost, myId, background }: Props) {
       <div className="card">
         <h2>Minispiel wählen</h2>
         <GameCarousel isHost={isHost} onStart={startGame} error={startError} />
+      </div>
+
+      <div className="card centered-content">
+        <button type="button" className="secondary" onClick={onLeave}>
+          Lobby verlassen
+        </button>
       </div>
     </div>
   );

@@ -292,6 +292,12 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     broadcastRoom(room.code);
   });
 
+  socket.on("room:leave", () => {
+    const clientId = socketToClient.get(socket.id);
+    if (!clientId) return;
+    for (const staleCode of removePlayerFromAllRooms(clientId)) broadcastRoom(staleCode);
+  });
+
   socket.on("wwe:vote", (payload) => {
     const clientId = socketToClient.get(socket.id);
     const room = clientId ? findRoomByPlayer(clientId) : undefined;
