@@ -28,6 +28,13 @@ export default function ZahlenGame({ room, myId, isHost }: Props) {
 
   const [guessInput, setGuessInput] = useState("");
   const [feedbackPopup, setFeedbackPopup] = useState<"higher" | "lower" | null>(null);
+  const [lastGuess, setLastGuess] = useState<number | null>(null);
+
+  // A new round means a new secret number, so the last round's reference
+  // point would be misleading — clear it as soon as the round changes.
+  useEffect(() => {
+    setLastGuess(null);
+  }, [zahlenGame?.round]);
 
   const { transition, flipped } = useLeaderboardTransition(
     zahlenGame?.stage,
@@ -64,6 +71,7 @@ export default function ZahlenGame({ room, myId, isHost }: Props) {
     if (!Number.isInteger(value) || value < 1 || value > 100) return;
     socket.emit("zahlen:submitGuess", { guess: value });
     setGuessInput("");
+    setLastGuess(value);
   }
 
   function next() {
@@ -101,6 +109,11 @@ export default function ZahlenGame({ room, myId, isHost }: Props) {
 
       {game.stage === "guessing" && (
         <div className="card centered-content">
+          {lastGuess !== null && (
+            <p className="hint">
+              Deine letzte Zahl: <strong>{lastGuess}</strong>
+            </p>
+          )}
           {hasGuessed ? (
             <p className="hint">
               Warte auf die anderen … ({game.submittedPlayerIds.length}/{connectedCount})
