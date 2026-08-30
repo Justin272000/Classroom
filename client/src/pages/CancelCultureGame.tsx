@@ -36,7 +36,7 @@ export default function CancelCultureGame({ room, myId, isHost }: Props) {
 
   return (
     <div className="page centered" style={pageBackgroundStyle(GAME.background)}>
-      <Lettering src={GAME.lettering} alt={GAME.name} />
+      <Lettering src={GAME.lettering} alt={GAME.name} onClick={isHost ? backToLobby : undefined} />
       <p className="question">„{game.statement}“</p>
 
       {room.phase === "playing" && (

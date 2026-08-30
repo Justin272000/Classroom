@@ -175,7 +175,7 @@ export default function KennedeineFreundeGame({ room, myId, isHost }: Props) {
   if (transition) {
     return (
       <div className="page centered" style={pageBackgroundStyle(GAME.background, GAME.backgroundColor)}>
-        <Lettering src={GAME.lettering} alt={GAME.name} />
+        <Lettering src={GAME.lettering} alt={GAME.name} onClick={isHost ? backToLobby : undefined} />
         <AnimatedLeaderboard transition={transition} flipped={flipped} findPlayer={(id) => findPlayer(room, id)} />
       </div>
     );
@@ -183,7 +183,7 @@ export default function KennedeineFreundeGame({ room, myId, isHost }: Props) {
 
   return (
     <div className="page centered" style={pageBackgroundStyle(GAME.background, GAME.backgroundColor)}>
-      <Lettering src={GAME.lettering} alt={GAME.name} />
+      <Lettering src={GAME.lettering} alt={GAME.name} onClick={isHost ? backToLobby : undefined} />
 
       {game.stage !== "finished" && (
         <p className="slf-round">
@@ -297,7 +297,12 @@ export default function KennedeineFreundeGame({ room, myId, isHost }: Props) {
           {showBonusPopup && <div className="kdf-bonus-popup">+5 Bonus — alles richtig!</div>}
           <div className="card centered-content">
             {isHost ? (
-              <button onClick={next}>{isLastRound ? "Endauswertung anzeigen" : "Nächste Runde"}</button>
+              <div className="actions">
+                <button onClick={next}>{isLastRound ? "Endauswertung anzeigen" : "Nächste Runde"}</button>
+                <button className="secondary" onClick={backToLobby}>
+                  Zurück zur Lobby
+                </button>
+              </div>
             ) : (
               <p className="hint">Warte auf den Host …</p>
             )}

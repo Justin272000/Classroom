@@ -81,7 +81,7 @@ export default function WhoamiGame({ room, myId, isHost }: Props) {
 
   return (
     <div className="page centered" style={pageBackgroundStyle(GAME.background)}>
-      <Lettering src={GAME.lettering} alt={GAME.name} />
+      <Lettering src={GAME.lettering} alt={GAME.name} onClick={isHost ? backToLobby : undefined} />
 
       {game.stage === "assigning" && (
         <div className="card">
