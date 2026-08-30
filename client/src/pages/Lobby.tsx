@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import BigPlayerTile from "../components/BigPlayerTile";
 import CharacterCarousel from "../components/CharacterCarousel";
 import GameCarousel from "../components/GameCarousel";
 import Lettering from "../components/Lettering";
 import QrCode from "../components/QrCode";
 import { pageBackgroundStyle } from "../pageBackground";
+import { buyPremiumTest, fetchPurchaseStatus, purchasesAvailable } from "../purchases";
 import { socket } from "../socket";
 import type { GameId, RoomState } from "../types";
 
@@ -19,7 +20,24 @@ interface Props {
 export default function Lobby({ room, isHost, myId, background, onLeave }: Props) {
   const [copied, setCopied] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
+  const [purchased, setPurchased] = useState(false);
+  const [purchaseBusy, setPurchaseBusy] = useState(false);
+  const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const joinUrl = `${window.location.origin}/?code=${room.code}`;
+
+  useEffect(() => {
+    if (myId) fetchPurchaseStatus(myId).then(setPurchased);
+  }, [myId]);
+
+  async function handleBuy() {
+    if (!myId) return;
+    setPurchaseBusy(true);
+    setPurchaseError(null);
+    const res = await buyPremiumTest(myId);
+    setPurchaseBusy(false);
+    if (res.ok) setPurchased(true);
+    else setPurchaseError(res.error);
+  }
 
   function startGame(gameId: GameId) {
     setStartError(null);
@@ -97,6 +115,20 @@ export default function Lobby({ room, isHost, myId, background, onLeave }: Props
         <h2>Minispiel wählen</h2>
         <GameCarousel isHost={isHost} onStart={startGame} error={startError} />
       </div>
+
+      {isHost && (purchasesAvailable() || purchased) && (
+        <div className="card centered-content">
+          <h2>TEST: Premium (Zahlen)</h2>
+          {purchased ? (
+            <p>Freigeschaltet ✅</p>
+          ) : (
+            <button type="button" onClick={handleBuy} disabled={purchaseBusy}>
+              {purchaseBusy ? "…" : "Kaufen (Test)"}
+            </button>
+          )}
+          {purchaseError && <p className="error">{purchaseError}</p>}
+        </div>
+      )}
 
       <div className="card centered-content">
         <button type="button" className="secondary" onClick={onLeave}>

@@ -235,6 +235,11 @@ export interface ClientToServerEvents {
   "kennedeinefreunde:submitWord": (payload: { word: string }) => void;
   "kennedeinefreunde:submitAssignment": (payload: { assignment: Record<string, string> }) => void;
   "zahlen:submitGuess": (payload: { guess: number }) => void;
+  "purchase:status": (payload: { clientId: string }, ack: (res: { purchased: boolean }) => void) => void;
+  "purchase:record": (
+    payload: { clientId: string; productId: string },
+    ack: (res: { ok: true } | { ok: false; error: string }) => void
+  ) => void;
   "player:setCharacter": (
     payload: { character: string },
     ack: (res: { ok: true } | { ok: false; error: string }) => void

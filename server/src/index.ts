@@ -46,6 +46,7 @@ import {
 } from "./rooms.js";
 import { KDF_ROUND_TIME_MS } from "./games/kennedeinefreunde.js";
 import { ZEITBOMBE_ANSWER_MS, ZEITBOMBE_CHALLENGE_MS } from "./games/zeitbombe.js";
+import { hasPurchased, PREMIUM_PRODUCT_ID, recordPurchase } from "./purchases.js";
 import type { ClientToServerEvents, ServerToClientEvents } from "./types.js";
 
 const PORT = Number(process.env.PORT ?? 4000);
@@ -243,6 +244,10 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
         ack({ ok: false, error: "Mindestens 3 Spieler nötig." });
       }
     } else if (payload?.gameId === "zahlen") {
+      if (!hasPurchased(clientId)) {
+        ack({ ok: false, error: "Zahlen ist Teil des Test-Kaufs. Bitte zuerst in der Lobby freischalten." });
+        return;
+      }
       startZahlenGame(room);
       ack({ ok: true });
       broadcastRoom(room.code);
@@ -436,6 +441,21 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     if (!room || !clientId) return;
     const guess = Number(payload?.guess);
     if (zahlenSubmitGuess(room, clientId, guess)) broadcastRoom(room.code);
+  });
+
+  socket.on("purchase:status", (payload, ack) => {
+    ack({ purchased: hasPurchased((payload?.clientId ?? "").trim()) });
+  });
+
+  socket.on("purchase:record", (payload, ack) => {
+    const clientId = (payload?.clientId ?? "").trim();
+    const productId = (payload?.productId ?? "").trim();
+    if (!clientId || productId !== PREMIUM_PRODUCT_ID) {
+      ack({ ok: false, error: "Ungültiger Kauf." });
+      return;
+    }
+    recordPurchase(clientId, productId);
+    ack({ ok: true });
   });
 
   socket.on("player:setCharacter", (payload, ack) => {

@@ -1,9 +1,14 @@
 node_modules/
 dist/
+*.tsbuildinfo
 .env
 .env.local
+.env.*.local
 .DS_Store
 *.log
+
+# Server-side purchase records — runtime state, not source.
+/server/data/
 
 # Original character source images — the processed tiles that ship with the
 # app live in client/public/characters/; these are just what they were cut from.

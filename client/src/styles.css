@@ -24,7 +24,10 @@ body {
 
 .page {
   min-height: 100vh;
-  padding: 32px 16px 64px;
+  /* viewport-fit=cover lets the native iOS shell render edge-to-edge under
+     the status bar/Dynamic Island — a plain browser has no notch, so
+     env(safe-area-inset-top) is just 0 there and this collapses to 32px. */
+  padding: max(32px, calc(env(safe-area-inset-top) + 16px)) 16px 64px;
   display: flex;
   flex-direction: column;
   align-items: center;

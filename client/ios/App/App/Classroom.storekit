@@ -1,0 +1,37 @@
+{
+  "identifier" : "5CF22A99-0921-4CE4-B5F8-11344B599373",
+  "nonRenewingSubscriptions" : [],
+  "products" : [
+    {
+      "displayPrice" : "0.99",
+      "familyShareable" : false,
+      "internalID" : "46171679-8C2C-4C66-9BBC-F3764B1DD6B9",
+      "localizations" : [
+        {
+          "description" : "Premium-Test-Freischaltung",
+          "displayName" : "Premium Unlock (Test)",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "de.heinbockel.classroom.premium_test",
+      "referenceName" : "Premium Unlock (Test)",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "0",
+    "_developerTeamID" : "0",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 0,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+
+    ]
+  },
+  "subscriptionGroups" : [],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}
