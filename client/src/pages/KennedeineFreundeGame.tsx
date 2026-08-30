@@ -270,7 +270,7 @@ export default function KennedeineFreundeGame({ room, myId, isHost }: Props) {
       {game.stage === "results" && game.myResult && (
         <>
           <div className="slf-category">{game.category}</div>
-          <div className="big-tile-grid">
+          <div className="big-tile-grid kdf-results-grid">
             {game.myResult.entries.map((entry) => {
               const target = findPlayer(room, entry.targetPlayerId);
               const text = game.revealedWords.find((w) => w.playerId === entry.termOwnerId)?.text ?? "";

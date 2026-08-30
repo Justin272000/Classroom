@@ -488,6 +488,10 @@ button.secondary {
   box-shadow: 0 0 0 2px rgba(245, 215, 110, 0.4);
 }
 
+.kdf-results-grid .big-tile.highlighted .big-tile-value {
+  color: #4ade80;
+}
+
 .big-tile:disabled {
   opacity: 0.4;
 }
