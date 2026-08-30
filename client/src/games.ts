@@ -60,9 +60,7 @@ export const GAMES: GameDef[] = [
     id: "kennedeinefreunde",
     name: "Kenne deine Freunde",
     cover: "/covers/kenne-deine-freunde.webp",
-    // no dedicated background art yet — a dark warm glow sampled from the
-    // cover art's orange sunburst stands in for one instead
-    backgroundColor: "#65330c",
+    background: "/backgrounds/whoami.webp",
     lettering: "/lettering/kennedeinefreunde.webp",
   },
 ];
