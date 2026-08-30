@@ -4,7 +4,9 @@ export interface GameDef {
   id: GameId;
   name: string;
   cover: string;
-  background: string;
+  /** optional — a game without dedicated background art yet just falls back
+   * to the page's plain default styling (see pageBackgroundStyle). */
+  background?: string;
   lettering: string;
 }
 
@@ -50,6 +52,13 @@ export const GAMES: GameDef[] = [
     cover: "/covers/zeitbombe.webp",
     background: "/backgrounds/stadtlandfluss.webp",
     lettering: "/lettering/zeitbombe.webp",
+  },
+  {
+    id: "kennedeinefreunde",
+    name: "Kenne deine Freunde",
+    cover: "/covers/kenne-deine-freunde.webp",
+    // no dedicated background art yet — falls back to the plain page style
+    lettering: "/lettering/kennedeinefreunde.webp",
   },
 ];
 

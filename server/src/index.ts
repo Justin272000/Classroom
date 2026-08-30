@@ -11,6 +11,9 @@ import {
   forceRevealTimedOut,
   getRoom,
   joinRoom,
+  kdfNext,
+  kdfSubmitAssignment,
+  kdfSubmitWord,
   removePlayerFromAllRooms,
   resolveZeitbombeTimeout,
   setCharacter,
@@ -18,6 +21,7 @@ import {
   slfSubmitWord,
   startCancelCultureGame,
   startGuessItGame,
+  startKdfGame,
   startSlfGame,
   startWhoamiGame,
   startWweGame,
@@ -209,6 +213,14 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
       } else {
         ack({ ok: false, error: "Mindestens 2 Spieler nötig." });
       }
+    } else if (payload?.gameId === "kennedeinefreunde") {
+      const started = startKdfGame(room);
+      if (started) {
+        ack({ ok: true });
+        broadcastRoom(room.code);
+      } else {
+        ack({ ok: false, error: "Mindestens 3 Spieler nötig." });
+      }
     } else {
       ack({ ok: false, error: "Unbekanntes Spiel." });
     }
@@ -236,6 +248,8 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
         scheduleRoundTimer(room);
         broadcastRoom(room.code);
       }
+    } else if (room.game?.id === "kennedeinefreunde") {
+      if (kdfNext(room, clientId)) broadcastRoom(room.code);
     }
   });
 
@@ -350,6 +364,21 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     const room = clientId ? findRoomByPlayer(clientId) : undefined;
     if (!room || !clientId) return;
     if (submitZeitbombeChallenge(room, clientId)) broadcastRoom(room.code);
+  });
+
+  socket.on("kennedeinefreunde:submitWord", (payload) => {
+    const clientId = socketToClient.get(socket.id);
+    const room = clientId ? findRoomByPlayer(clientId) : undefined;
+    if (!room || !clientId) return;
+    if (kdfSubmitWord(room, clientId, payload?.word ?? "")) broadcastRoom(room.code);
+  });
+
+  socket.on("kennedeinefreunde:submitAssignment", (payload) => {
+    const clientId = socketToClient.get(socket.id);
+    const room = clientId ? findRoomByPlayer(clientId) : undefined;
+    if (!room || !clientId) return;
+    const assignment = new Map(Object.entries(payload?.assignment ?? {}));
+    if (kdfSubmitAssignment(room, clientId, assignment)) broadcastRoom(room.code);
   });
 
   socket.on("player:setCharacter", (payload, ack) => {

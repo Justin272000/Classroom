@@ -2,6 +2,17 @@ import { isCharacter } from "./characters.js";
 import { pickStatement } from "./games/cancelculture.js";
 import { pickQuestion as pickGuessItQuestion } from "./games/guessit.js";
 import {
+  allConnectedSubmittedAssignments as kdfAllAssigned,
+  allConnectedSubmittedWords as kdfAllWordsSubmitted,
+  beginAssigning as kdfBeginAssigning,
+  nextRound as kdfNextRound,
+  revealRound as kdfRevealRound,
+  startKennedeineFreunde,
+  submitAssignment as kdfSubmitAssignmentInternal,
+  submitWord as kdfSubmitWordInternal,
+  type InternalKdfGame,
+} from "./games/kennedeinefreunde.js";
+import {
   allConnectedSubmitted as slfAllSubmitted,
   nextSlfRound,
   revealRound as revealSlfRound,
@@ -34,6 +45,8 @@ import {
 import type {
   CancelCultureGameState,
   GuessItGameState,
+  KdfTermToAssign,
+  KennedeineFreundeGameState,
   Player,
   RoomState,
   StadtLandFlussGameState,
@@ -74,7 +87,8 @@ type InternalGame =
   | InternalGuessItGame
   | InternalCancelCultureGame
   | InternalSlfGame
-  | InternalZeitbombeGame;
+  | InternalZeitbombeGame
+  | InternalKdfGame;
 
 interface Room {
   code: string;
@@ -92,6 +106,7 @@ interface Room {
   cancelcultureAskedStatements: Set<string>;
   slfUsedCategories: Set<string>;
   zeitbombeUsedCategories: Set<string>;
+  kdfUsedCategories: Set<string>;
 }
 
 const rooms = new Map<string, Room>();
@@ -133,6 +148,7 @@ export function createRoom(hostId: string, hostName: string): Room {
     cancelcultureAskedStatements: new Set(),
     slfUsedCategories: new Set(),
     zeitbombeUsedCategories: new Set(),
+    kdfUsedCategories: new Set(),
   };
   rooms.set(code, room);
   return room;
@@ -350,6 +366,41 @@ export function slfNext(room: Room, playerId: string): boolean {
   return nextSlfRound(room.game);
 }
 
+export function startKdfGame(room: Room): boolean {
+  const connectedIds = [...room.players.values()].filter((p) => p.connected).map((p) => p.id);
+  const game = startKennedeineFreunde(connectedIds, room.kdfUsedCategories);
+  if (!game) return false;
+  room.game = game;
+  room.phase = "playing";
+  return true;
+}
+
+export function kdfSubmitWord(room: Room, playerId: string, word: string): boolean {
+  if (room.game?.id !== "kennedeinefreunde") return false;
+  const ok = kdfSubmitWordInternal(room.game, playerId, word);
+  if (ok && kdfAllWordsSubmitted(room.game, room.players)) {
+    kdfBeginAssigning(room.game);
+  }
+  return ok;
+}
+
+export function kdfSubmitAssignment(room: Room, playerId: string, assignment: Map<string, string>): boolean {
+  if (room.game?.id !== "kennedeinefreunde") return false;
+  const ok = kdfSubmitAssignmentInternal(room.game, playerId, assignment, room.players);
+  if (ok && kdfAllAssigned(room.game, room.players)) {
+    kdfRevealRound(room.game, room.players);
+  }
+  return ok;
+}
+
+/** Host-only: advances from a round's results to the next round, or to the
+ * final podium if that was the last round. */
+export function kdfNext(room: Room, playerId: string): boolean {
+  if (room.game?.id !== "kennedeinefreunde") return false;
+  if (room.hostId !== playerId) return false;
+  return kdfNextRound(room.game);
+}
+
 export function startZeitbombeGame(room: Room): boolean {
   const connectedIds = [...room.players.values()].filter((p) => p.connected).map((p) => p.id);
   const game = startZeitbombe(connectedIds, room.zeitbombeUsedCategories);
@@ -407,6 +458,7 @@ export function toPublicState(room: Room, forPlayerId: string): RoomState {
     | CancelCultureGameState
     | StadtLandFlussGameState
     | ZeitbombeGameState
+    | KennedeineFreundeGameState
     | null = null;
 
   if (room.game?.id === "wwe") {
@@ -504,6 +556,37 @@ export function toPublicState(room: Room, forPlayerId: string): RoomState {
       deadline: g.deadline,
       loserId: g.loserId,
       loseReason: g.loseReason,
+    };
+  } else if (room.game?.id === "kennedeinefreunde") {
+    const g = room.game;
+    const scores = [...room.players.values()]
+      .map((p) => ({ playerId: p.id, name: p.name, total: g.scores.get(p.id) ?? 0 }))
+      .sort((a, b) => b.total - a.total);
+
+    const termsToAssign: KdfTermToAssign[] =
+      g.stage === "assigning"
+        ? [...room.players.values()]
+            .filter((p) => p.connected && p.id !== forPlayerId && g.words.has(p.id))
+            .map((p) => ({ ownerId: p.id, text: g.words.get(p.id)! }))
+        : [];
+
+    const revealedWords =
+      g.stage === "results" || g.stage === "finished"
+        ? [...g.words.entries()].map(([playerId, text]) => ({ playerId, text }))
+        : [];
+
+    game = {
+      id: "kennedeinefreunde",
+      stage: g.stage,
+      round: g.round,
+      totalRounds: g.totalRounds,
+      category: g.category,
+      submittedPlayerIds: [...g.words.keys()],
+      assignedPlayerIds: [...g.assignments.keys()],
+      termsToAssign,
+      myResult: g.lastRoundResults?.get(forPlayerId) ?? null,
+      revealedWords,
+      scores,
     };
   }
 

@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
+import AnimatedLeaderboard from "../components/AnimatedLeaderboard";
 import Avatar from "../components/Avatar";
 import BigPlayerTile from "../components/BigPlayerTile";
 import Lettering from "../components/Lettering";
 import { findGame } from "../games";
+import { useLeaderboardTransition } from "../hooks/useLeaderboardTransition";
 import { pageBackgroundStyle } from "../pageBackground";
 import { socket } from "../socket";
 import type { Player, RoomState } from "../types";
@@ -15,22 +17,8 @@ interface Props {
   isHost: boolean;
 }
 
-interface ScoreEntry {
-  playerId: string;
-  name: string;
-  total: number;
-}
-
-const ROW_HEIGHT = 64;
-const TRANSITION_MS = 2200;
-
 function findPlayer(room: RoomState, id: string): Player {
   return room.players.find((p) => p.id === id) ?? { id, name: "?", connected: true, character: null };
-}
-
-function rankIndex(list: ScoreEntry[], playerId: string): number {
-  const i = list.findIndex((s) => s.playerId === playerId);
-  return i === -1 ? list.length : i;
 }
 
 export default function StadtLandFlussGame({ room, myId, isHost }: Props) {
@@ -38,47 +26,13 @@ export default function StadtLandFlussGame({ room, myId, isHost }: Props) {
   const slfGame = game?.id === "stadtlandfluss" ? game : undefined;
 
   const [wordInput, setWordInput] = useState("");
-  // Snapshot of standings as they were *before* the round currently being
-  // shown, so the leaderboard transition below has something to animate from.
-  const roundStartScoresRef = useRef<ScoreEntry[]>(slfGame?.scores ?? []);
-  const prevStageRef = useRef<string | undefined>(slfGame?.stage);
-  const [transition, setTransition] = useState<{ from: ScoreEntry[]; to: ScoreEntry[] } | null>(null);
-  const [flipped, setFlipped] = useState(false);
-
-  // Every client (not just whoever clicked "Nächste Runde") reacts to leaving
-  // "results" by showing a brief animated leaderboard before the next round
-  // (or the final podium) appears.
-  useEffect(() => {
-    if (!slfGame) return;
-    const leavingResults = prevStageRef.current === "results" && slfGame.stage !== "results";
-    if (leavingResults) {
-      setTransition({ from: roundStartScoresRef.current, to: slfGame.scores });
-    }
-    if (slfGame.stage === "writing") {
-      roundStartScoresRef.current = slfGame.scores;
-    }
-    prevStageRef.current = slfGame.stage;
-    // Only stage/round should retrigger this — scores always change in lockstep
-    // with a stage change, and depending on the array itself would refire on
-    // every unrelated update (e.g. someone else submitting a word).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slfGame?.stage, slfGame?.round]);
-
-  useEffect(() => {
-    if (!transition) {
-      setFlipped(false);
-      return;
-    }
-    setFlipped(false);
-    const raf1 = requestAnimationFrame(() => {
-      requestAnimationFrame(() => setFlipped(true));
-    });
-    const timer = setTimeout(() => setTransition(null), TRANSITION_MS);
-    return () => {
-      cancelAnimationFrame(raf1);
-      clearTimeout(timer);
-    };
-  }, [transition]);
+  const { transition, flipped } = useLeaderboardTransition(
+    slfGame?.stage,
+    slfGame?.round,
+    slfGame?.scores ?? [],
+    "writing",
+    "results"
+  );
 
   if (!game || game.id !== "stadtlandfluss") return null;
 
@@ -102,34 +56,10 @@ export default function StadtLandFlussGame({ room, myId, isHost }: Props) {
   }
 
   if (transition) {
-    const activeOrder = flipped ? transition.to : transition.from;
     return (
       <div className="page centered" style={pageBackgroundStyle(GAME.background)}>
         <Lettering src={GAME.lettering} alt={GAME.name} />
-        <div className="card">
-          <h2>Punktestand</h2>
-          <div className="leaderboard-wrap" style={{ height: transition.to.length * ROW_HEIGHT }}>
-            {transition.to.map((s) => {
-              const player = findPlayer(room, s.playerId);
-              const rank = rankIndex(transition.to, s.playerId);
-              const top = rankIndex(activeOrder, s.playerId) * ROW_HEIGHT;
-              return (
-                <div
-                  key={s.playerId}
-                  className={`leaderboard-row podium-place place-${rank + 1}`}
-                  style={{ top }}
-                >
-                  <span className="podium-rank">{rank + 1}.</span>
-                  <span className="inline-player">
-                    <Avatar characterId={player.character} />
-                    {s.name}
-                  </span>
-                  <span className="podium-score">{s.total} Punkte</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <AnimatedLeaderboard transition={transition} flipped={flipped} findPlayer={(id) => findPlayer(room, id)} />
       </div>
     );
   }

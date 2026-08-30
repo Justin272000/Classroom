@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { getClientId } from "./clientId";
-import { GAMES } from "./games";
+import { GAMES, type GameDef } from "./games";
 import CancelCultureGame from "./pages/CancelCultureGame";
 import GuessItGame from "./pages/GuessItGame";
 import Home from "./pages/Home";
+import KennedeineFreundeGame from "./pages/KennedeineFreundeGame";
 import Lobby from "./pages/Lobby";
 import StadtLandFlussGame from "./pages/StadtLandFlussGame";
 import WhoamiGame from "./pages/WhoamiGame";
@@ -16,8 +17,12 @@ export default function App() {
   const [room, setRoom] = useState<RoomState | null>(null);
   const clientId = useRef(getClientId()).current;
   // Picked once per page load, shared by Home and Lobby so the two screens
-  // match for this visit — a fresh reload picks again for some variety.
-  const sharedBackground = useRef(GAMES[Math.floor(Math.random() * GAMES.length)].background).current;
+  // match for this visit — a fresh reload picks again for some variety. Only
+  // games with dedicated background art are eligible, so a game still
+  // waiting on that asset doesn't leave Home/Lobby blank for the visit.
+  const backgroundedGames = GAMES.filter((g): g is GameDef & { background: string } => !!g.background);
+  const sharedBackground = useRef(backgroundedGames[Math.floor(Math.random() * backgroundedGames.length)].background)
+    .current;
   // Remembers the room we're in so a dropped connection can silently rejoin
   // under the same identity once socket.io reconnects (new socket.id, same clientId).
   const sessionRef = useRef<{ code: string; name: string } | null>(null);
@@ -73,6 +78,8 @@ export default function App() {
       return <StadtLandFlussGame room={room} myId={clientId} isHost={isHost} />;
     case "zeitbombe":
       return <ZeitbombeGame room={room} myId={clientId} isHost={isHost} />;
+    case "kennedeinefreunde":
+      return <KennedeineFreundeGame room={room} myId={clientId} isHost={isHost} />;
     default:
       return <WweGame room={room} myId={clientId} isHost={isHost} />;
   }

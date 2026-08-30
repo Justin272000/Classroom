@@ -7,7 +7,14 @@ export interface Player {
 
 export type RoomPhase = "lobby" | "playing" | "results";
 
-export type GameId = "wwe" | "whoami" | "guessit" | "cancelculture" | "stadtlandfluss" | "zeitbombe";
+export type GameId =
+  | "wwe"
+  | "whoami"
+  | "guessit"
+  | "cancelculture"
+  | "stadtlandfluss"
+  | "zeitbombe"
+  | "kennedeinefreunde";
 
 export interface WweGameState {
   id: "wwe";
@@ -98,6 +105,40 @@ export interface ZeitbombeGameState {
   loseReason: ZeitbombeLoseReason | null;
 }
 
+export type KdfStage = "writing" | "assigning" | "results" | "finished";
+
+export interface KdfTermToAssign {
+  ownerId: string;
+  text: string;
+}
+
+export interface KdfRoundEntry {
+  targetPlayerId: string;
+  termOwnerId: string;
+  correct: boolean;
+}
+
+export interface KdfRoundResult {
+  entries: KdfRoundEntry[];
+  correctCount: number;
+  allCorrect: boolean;
+  points: number;
+}
+
+export interface KennedeineFreundeGameState {
+  id: "kennedeinefreunde";
+  stage: KdfStage;
+  round: number;
+  totalRounds: number;
+  category: string;
+  submittedPlayerIds: string[];
+  assignedPlayerIds: string[];
+  termsToAssign: KdfTermToAssign[];
+  myResult: KdfRoundResult | null;
+  revealedWords: { playerId: string; text: string }[];
+  scores: { playerId: string; name: string; total: number }[];
+}
+
 export interface RoomState {
   code: string;
   hostId: string;
@@ -110,6 +151,7 @@ export interface RoomState {
     | CancelCultureGameState
     | StadtLandFlussGameState
     | ZeitbombeGameState
+    | KennedeineFreundeGameState
     | null;
 }
 
@@ -143,6 +185,8 @@ export interface ClientToServerEvents {
   "stadtlandfluss:submitWord": (payload: { word: string }) => void;
   "zeitbombe:submit": (payload: { text: string }) => void;
   "zeitbombe:challenge": () => void;
+  "kennedeinefreunde:submitWord": (payload: { word: string }) => void;
+  "kennedeinefreunde:submitAssignment": (payload: { assignment: Record<string, string> }) => void;
   "player:setCharacter": (
     payload: { character: string },
     ack: (res: { ok: true } | { ok: false; error: string }) => void
