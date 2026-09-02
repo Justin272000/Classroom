@@ -3,7 +3,16 @@ services:
     name: classroom
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build
+    # concurrently (with its date-fns/rxjs/lodash deps) and the Capacitor iOS
+    # CLI tools are only for local dev / native-shell work — this deploy never
+    # touches either, so they're stripped from the tree before installing.
+    # ~42% smaller install (157M -> 91M), meaningfully faster on Render's
+    # shared free-tier CPU. Only affects this ephemeral build container, not
+    # the committed package.json files.
+    buildCommand: >-
+      npm pkg delete devDependencies.concurrently &&
+      npm pkg delete "devDependencies.@capacitor/cli" "devDependencies.@capacitor/ios" --workspace=client &&
+      npm install && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
