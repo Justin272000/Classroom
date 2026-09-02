@@ -15,7 +15,12 @@ function mod(n: number, m: number): number {
 export default function CharacterCarousel({ players, myId }: Props) {
   const me = players.find((p) => p.id === myId);
   const myIndex = me?.character ? CHARACTERS.findIndex((c) => c.id === me.character) : -1;
-  const [index, setIndex] = useState(myIndex >= 0 ? myIndex : 0);
+  // Show the player's own pick if they already have one; otherwise start on
+  // a random character each time, purely for variety, rather than always the
+  // same first entry in CHARACTERS.
+  const [index, setIndex] = useState(() =>
+    myIndex >= 0 ? myIndex : Math.floor(Math.random() * CHARACTERS.length)
+  );
 
   const n = CHARACTERS.length;
   const current = CHARACTERS[mod(index, n)];

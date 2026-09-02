@@ -13,7 +13,9 @@ function mod(n: number, m: number): number {
 }
 
 export default function GameCarousel({ isHost, onStart, error }: Props) {
-  const [index, setIndex] = useState(0);
+  // A different game front-and-center each time the lobby is entered, purely
+  // for variety — otherwise it's always the same first entry in GAMES.
+  const [index, setIndex] = useState(() => Math.floor(Math.random() * GAMES.length));
 
   const n = GAMES.length;
   const current = GAMES[mod(index, n)];

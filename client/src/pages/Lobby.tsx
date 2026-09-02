@@ -20,7 +20,7 @@ interface Props {
 export default function Lobby({ room, isHost, myId, background, onLeave }: Props) {
   const [copied, setCopied] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
-  const [playersExpanded, setPlayersExpanded] = useState(true);
+  const [playersExpanded, setPlayersExpanded] = useState(false);
   const [purchased, setPurchased] = useState(false);
   const [purchaseBusy, setPurchaseBusy] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
