@@ -86,10 +86,6 @@ export default function Lobby({ room, isHost, myId, background, onLeave }: Props
         <button type="button" className="secondary" onClick={copyLink}>
           {copied ? "Link kopiert!" : "Link kopieren"}
         </button>
-        <p className="hint">
-          Scannen öffnet die App direkt mit ausgefülltem Code. Funktioniert nur, wenn diese Seite
-          über die WLAN-Adresse dieses Geräts aufgerufen wurde (nicht "localhost").
-        </p>
       </div>
 
       <div className="card">
