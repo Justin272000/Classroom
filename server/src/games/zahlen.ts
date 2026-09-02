@@ -29,7 +29,8 @@ function randomTarget(): number {
   return 1 + Math.floor(Math.random() * 100);
 }
 
-export function startZahlen(connectedPlayerIds: string[]): InternalZahlenGame {
+export function startZahlen(connectedPlayerIds: string[]): InternalZahlenGame | null {
+  if (connectedPlayerIds.length < 2) return null;
   return {
     id: "zahlen",
     stage: "guessing",

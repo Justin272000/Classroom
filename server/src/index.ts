@@ -209,11 +209,20 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
       ack({ ok: false, error: "Nur der Host kann ein Spiel starten." });
       return;
     }
+    const connectedPlayers = [...room.players.values()].filter((p) => p.connected);
+    if (connectedPlayers.some((p) => !p.character)) {
+      ack({ ok: false, error: "Alle Spieler müssen zuerst einen Charakter wählen." });
+      return;
+    }
     if (payload?.gameId === "wwe") {
-      startWweGame(room);
-      scheduleRoundTimer(room);
-      ack({ ok: true });
-      broadcastRoom(room.code);
+      const started = startWweGame(room);
+      if (started) {
+        scheduleRoundTimer(room);
+        ack({ ok: true });
+        broadcastRoom(room.code);
+      } else {
+        ack({ ok: false, error: "Mindestens 2 Spieler nötig." });
+      }
     } else if (payload?.gameId === "whoami") {
       const started = startWhoamiGame(room);
       if (started) {
@@ -223,14 +232,22 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
         ack({ ok: false, error: "Mindestens 2 Spieler nötig." });
       }
     } else if (payload?.gameId === "guessit") {
-      startGuessItGame(room);
-      ack({ ok: true });
-      broadcastRoom(room.code);
+      const started = startGuessItGame(room);
+      if (started) {
+        ack({ ok: true });
+        broadcastRoom(room.code);
+      } else {
+        ack({ ok: false, error: "Mindestens 2 Spieler nötig." });
+      }
     } else if (payload?.gameId === "cancelculture") {
-      startCancelCultureGame(room);
-      scheduleRoundTimer(room);
-      ack({ ok: true });
-      broadcastRoom(room.code);
+      const started = startCancelCultureGame(room);
+      if (started) {
+        scheduleRoundTimer(room);
+        ack({ ok: true });
+        broadcastRoom(room.code);
+      } else {
+        ack({ ok: false, error: "Mindestens 2 Spieler nötig." });
+      }
     } else if (payload?.gameId === "stadtlandfluss") {
       const started = startSlfGame(room);
       if (started) {
@@ -258,13 +275,13 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
         ack({ ok: false, error: "Mindestens 3 Spieler nötig." });
       }
     } else if (payload?.gameId === "zahlen") {
-      if (!hasPurchased(clientId)) {
-        ack({ ok: false, error: "Zahlen ist Teil des Test-Kaufs. Bitte zuerst in der Lobby freischalten." });
-        return;
+      const started = startZahlenGame(room);
+      if (started) {
+        ack({ ok: true });
+        broadcastRoom(room.code);
+      } else {
+        ack({ ok: false, error: "Mindestens 2 Spieler nötig." });
       }
-      startZahlenGame(room);
-      ack({ ok: true });
-      broadcastRoom(room.code);
     } else {
       ack({ ok: false, error: "Unbekanntes Spiel." });
     }
@@ -275,16 +292,17 @@ io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     const room = clientId ? findRoomByPlayer(clientId) : undefined;
     if (!room || room.hostId !== clientId) return;
     if (room.game?.id === "wwe") {
-      startWweGame(room);
-      scheduleRoundTimer(room);
-      broadcastRoom(room.code);
+      if (startWweGame(room)) {
+        scheduleRoundTimer(room);
+        broadcastRoom(room.code);
+      }
     } else if (room.game?.id === "guessit") {
-      startGuessItGame(room);
-      broadcastRoom(room.code);
+      if (startGuessItGame(room)) broadcastRoom(room.code);
     } else if (room.game?.id === "cancelculture") {
-      startCancelCultureGame(room);
-      scheduleRoundTimer(room);
-      broadcastRoom(room.code);
+      if (startCancelCultureGame(room)) {
+        scheduleRoundTimer(room);
+        broadcastRoom(room.code);
+      }
     } else if (room.game?.id === "stadtlandfluss") {
       if (slfNext(room, clientId)) broadcastRoom(room.code);
     } else if (room.game?.id === "zeitbombe") {

@@ -245,11 +245,14 @@ export function disconnectPlayer(playerId: string): Room | undefined {
   return room;
 }
 
-export function startWweGame(room: Room): void {
+export function startWweGame(room: Room): boolean {
+  const connectedIds = [...room.players.values()].filter((p) => p.connected).map((p) => p.id);
+  if (connectedIds.length < 2) return false;
   const question = pickWweQuestion(room.wweAskedQuestions);
   room.wweAskedQuestions.add(question);
   room.game = { id: "wwe", question, votes: new Map(), deadline: Date.now() + ANSWER_TIME_MS };
   room.phase = "playing";
+  return true;
 }
 
 export function submitWweVote(room: Room, voterId: string, targetPlayerId: string): boolean {
@@ -306,11 +309,14 @@ export function whoamiConfirmGuess(room: Room, playerId: string, correct: boolea
   return confirmGuess(room.game, playerId, correct, room.players);
 }
 
-export function startGuessItGame(room: Room): void {
+export function startGuessItGame(room: Room): boolean {
+  const connectedIds = [...room.players.values()].filter((p) => p.connected).map((p) => p.id);
+  if (connectedIds.length < 2) return false;
   const q = pickGuessItQuestion(room.guessitAskedQuestions);
   room.guessitAskedQuestions.add(q.question);
   room.game = { id: "guessit", question: q.question, answer: q.answer, unit: q.unit, guesses: new Map() };
   room.phase = "playing";
+  return true;
 }
 
 export function submitGuessItGuess(room: Room, playerId: string, guess: number): boolean {
@@ -326,7 +332,9 @@ export function submitGuessItGuess(room: Room, playerId: string, guess: number):
   return true;
 }
 
-export function startCancelCultureGame(room: Room): void {
+export function startCancelCultureGame(room: Room): boolean {
+  const connectedIds = [...room.players.values()].filter((p) => p.connected).map((p) => p.id);
+  if (connectedIds.length < 2) return false;
   const statement = pickStatement(room.cancelcultureAskedStatements);
   room.cancelcultureAskedStatements.add(statement);
   room.game = {
@@ -336,6 +344,7 @@ export function startCancelCultureGame(room: Room): void {
     deadline: Date.now() + ANSWER_TIME_MS,
   };
   room.phase = "playing";
+  return true;
 }
 
 export function submitCancelCultureVote(room: Room, playerId: string, answer: boolean): boolean {
@@ -421,10 +430,13 @@ export function kdfResolveTimeout(room: Room): boolean {
   return false;
 }
 
-export function startZahlenGame(room: Room): void {
+export function startZahlenGame(room: Room): boolean {
   const connectedIds = [...room.players.values()].filter((p) => p.connected).map((p) => p.id);
-  room.game = startZahlen(connectedIds);
+  const game = startZahlen(connectedIds);
+  if (!game) return false;
+  room.game = game;
   room.phase = "playing";
+  return true;
 }
 
 export function zahlenSubmitGuess(room: Room, playerId: string, guess: number): boolean {
