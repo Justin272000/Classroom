@@ -20,6 +20,7 @@ interface Props {
 export default function Lobby({ room, isHost, myId, background, onLeave }: Props) {
   const [copied, setCopied] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
+  const [playersExpanded, setPlayersExpanded] = useState(true);
   const [purchased, setPurchased] = useState(false);
   const [purchaseBusy, setPurchaseBusy] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
@@ -89,17 +90,27 @@ export default function Lobby({ room, isHost, myId, background, onLeave }: Props
       </div>
 
       <div className="card">
-        <h2>Spieler ({room.players.length})</h2>
-        <div className="big-tile-grid">
-          {room.players.map((p) => (
-            <BigPlayerTile
-              key={p.id}
-              player={p}
-              dimmed={!p.connected}
-              badge={p.id === room.hostId ? "Host" : !p.connected ? "Getrennt" : undefined}
-            />
-          ))}
-        </div>
+        <button
+          type="button"
+          className="card-toggle"
+          onClick={() => setPlayersExpanded((v) => !v)}
+          aria-expanded={playersExpanded}
+        >
+          <h2>Spieler ({room.players.length})</h2>
+          <span className="card-toggle-icon">{playersExpanded ? "▲" : "▼"}</span>
+        </button>
+        {playersExpanded && (
+          <div className="big-tile-grid">
+            {room.players.map((p) => (
+              <BigPlayerTile
+                key={p.id}
+                player={p}
+                dimmed={!p.connected}
+                badge={p.id === room.hostId ? "Host" : !p.connected ? "Getrennt" : undefined}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="card">

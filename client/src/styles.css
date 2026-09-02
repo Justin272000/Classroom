@@ -72,6 +72,28 @@ h2 {
   letter-spacing: 0.05em;
 }
 
+.card-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.card-toggle h2 {
+  margin: 0;
+}
+
+.card-toggle-icon {
+  color: var(--muted);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
 .subtitle {
   color: var(--muted);
   margin: 0 0 24px;
