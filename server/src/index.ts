@@ -1,6 +1,9 @@
 import cors from "cors";
 import express from "express";
+import { existsSync } from "node:fs";
 import { createServer } from "node:http";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { Server, type Socket } from "socket.io";
 import {
   ANSWER_TIME_MS,
@@ -54,6 +57,17 @@ const PORT = Number(process.env.PORT ?? 4000);
 const app = express();
 app.use(cors());
 app.get("/health", (_req, res) => res.json({ ok: true }));
+
+// Only present once the client has actually been built (npm run build) — local
+// `tsx watch` dev leaves this absent, so the client keeps being served by
+// Vite's own dev server exactly as before. In production this is the one and
+// only origin, which also lets client/src/socket.ts fall back to same-origin
+// instead of guessing a port.
+const CLIENT_DIST = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "client", "dist");
+if (existsSync(CLIENT_DIST)) {
+  app.use(express.static(CLIENT_DIST));
+  app.get("*", (_req, res) => res.sendFile(join(CLIENT_DIST, "index.html")));
+}
 
 const httpServer = createServer(app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
